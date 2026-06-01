@@ -16,7 +16,8 @@ dependencies = [
     "pandas>=2.2",
     "anarci>=2026.2.13.2",
     "dockq>=2.1.3",
-    "huggingface_hub"
+    # used by data/raw/avida/install_avida.py (snapshot_download of COGNANO/AVIDa-hIL6)
+    "huggingface_hub",
 ]
 
 [project.scripts]
