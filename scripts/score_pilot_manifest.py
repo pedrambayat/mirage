@@ -19,7 +19,7 @@ Use::
 
     uv run python scripts/score_pilot_manifest.py \
         --manifest data/staged/af2m/manifest_20260512_163902.tsv \
-        --data-dir /vast/projects/dbgoodma/goodman-laboratory/pbayat/binder-discrimination/abdisc-data/sabdab \
+        --data-dir ../abdisc-data/sabdab \
         --output results/published/sabdab_af2m_rmsd_pilot.csv \
         --no-dockq
 

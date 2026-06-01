@@ -40,6 +40,9 @@ packages = ["src/mirage"]
 line-length = 100
 target-version = "py311"
 src = ["src"]
+# Vendored third-party SAbDab download utility (OPIG, 2013) — not mirage code; keep it out of lint/format.
+extend-exclude = ["scripts/sabdab_downloader.py"]
+force-exclude = true
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "N", "RUF"]

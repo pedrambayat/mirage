@@ -48,9 +48,7 @@ def test_build_pairings_prioritizes_near_native_and_changes_target() -> None:
         ),
     ]
 
-    pairings = module._build_pairings(
-        parents, n_binders=2, targets_per_binder=1, seed=20260525
-    )
+    pairings = module._build_pairings(parents, n_binders=2, targets_per_binder=1, seed=20260525)
 
     assert [p.binder_parent_id for p in pairings] == [
         "sabdab-near1-H-A",

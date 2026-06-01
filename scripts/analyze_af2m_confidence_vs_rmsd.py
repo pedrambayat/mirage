@@ -968,9 +968,7 @@ def main() -> int:
         )
         wrong_target_csv = args.output.with_name(args.output.stem + "_wrong_targets.csv")
         _write_csv(wrong_target_csv, wrong_target_rows)
-        print(
-            f"Wrote {len(wrong_target_rows)} wrong-target-vs-real rows to {wrong_target_csv}"
-        )
+        print(f"Wrote {len(wrong_target_rows)} wrong-target-vs-real rows to {wrong_target_csv}")
 
     bucket_csv = args.output.with_name(args.output.stem + "_buckets.csv")
     _write_csv(bucket_csv, buckets)

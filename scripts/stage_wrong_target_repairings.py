@@ -287,9 +287,7 @@ def main() -> int:
 
     unique_binder_ids = {p.binder_parent_id for p in pairings}
     near_native_binder_ids = {
-        p.binder_parent_id
-        for p in pairings
-        if p.binder_parent_rmsd < _NEAR_NATIVE_RMSD_A
+        p.binder_parent_id for p in pairings if p.binder_parent_rmsd < _NEAR_NATIVE_RMSD_A
     }
     logger.info(
         "generated %d wrong-target pairings from %d binders; near_native_binders=%d",

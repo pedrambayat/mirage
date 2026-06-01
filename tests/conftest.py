@@ -7,7 +7,9 @@ import pytest
 
 SNAP_EPCAM_FALLBACKS: tuple[Path, ...] = (
     # PARCC: SNAP clone on Betty project storage.
-    Path("/vast/projects/dbgoodma/goodman-laboratory/pbayat/binder-discrimination/snap/outputs/data"),
+    Path(
+        "/vast/projects/dbgoodma/goodman-laboratory/pbayat/binder-discrimination/snap/outputs/data"
+    ),
     # Laptop: SNAP clone inside the Obsidian Google Drive vault.
     Path(
         "/Users/pedrambayat/Library/CloudStorage/GoogleDrive-pbayat123@gmail.com/My Drive/"
@@ -30,7 +32,9 @@ def epcam_data_dir() -> Path:
     pytest.skip("EpCAM data dir not available on any known fallback")
 
 
-SABDAB_DEFAULT = Path("/vast/projects/dbgoodma/goodman-laboratory/pbayat/binder-discrimination/abdisc-data/sabdab")
+SABDAB_DEFAULT = Path(
+    "/vast/projects/dbgoodma/goodman-laboratory/pbayat/binder-discrimination/abdisc-data/sabdab"
+)
 
 
 @pytest.fixture

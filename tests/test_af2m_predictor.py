@@ -228,10 +228,7 @@ def test_score_pilot_manifest_parent_id_handles_wrong_targets() -> None:
     spec.loader.exec_module(module)
 
     assert module._parent_id_for_manifest_id("sabdab-1abc-H-A-scramble01") == "sabdab-1abc-H-A"
-    assert (
-        module._parent_id_for_manifest_id("sabdab-1abc-H-A-wrongtarget02")
-        == "sabdab-1abc-H-A"
-    )
+    assert module._parent_id_for_manifest_id("sabdab-1abc-H-A-wrongtarget02") == "sabdab-1abc-H-A"
     assert (
         module._label_for_manifest_id(
             "sabdab-1abc-H-A-wrongtarget02", "sabdab-1abc-H-A", {"label": "POS"}
