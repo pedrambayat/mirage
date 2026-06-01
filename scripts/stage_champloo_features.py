@@ -5,9 +5,9 @@ Use::
 
     uv run python scripts/stage_champloo_features.py \\
         --pairs data/staged/champloo/champloo_pairs_af3.csv \\
-        --supp ../abdisc-data/champloo/Supplementary_Table_1_final_experimental_vhh_ag_systems.csv \\  # noqa: E501
+        --supp ../abdisc-data/champloo/Supplementary_Table_1_*.csv \\
         --output data/staged/champloo/champloo_features_af3.csv
-"""  # noqa: E501
+"""
 
 from __future__ import annotations
 
