@@ -13,6 +13,7 @@ from typing import Any
 import numpy as np
 
 from mirage.eval.gate import bootstrap_ci, metrics_at_threshold
+from mirage.features.normalize import normalize_antigen, normalize_binder
 from mirage.features.sequence import FEATURE_NAMES, sequence_features
 from mirage.model.ms import MsModel
 from mirage.scorers.base import BenchmarkExample
@@ -24,7 +25,10 @@ def features_for_examples(
     rows: list[list[float]] = []
     labels: list[int] = []
     for ex in examples:
-        feats = sequence_features(ex.binder_chains[0], ex.target_chains[0])
+        feats = sequence_features(
+            normalize_binder(ex.binder_chains[0]),
+            normalize_antigen(ex.target_chains[0]),
+        )
         rows.append([feats[name] for name in FEATURE_NAMES])
         labels.append(1 if ex.label == positive_label else 0)
     if not rows:

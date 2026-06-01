@@ -14,6 +14,8 @@ import argparse
 import csv
 from pathlib import Path
 
+from mirage.features.normalize import normalize_antigen, normalize_binder
+
 
 def read_csv(path: Path) -> list[dict[str, str]]:
     with path.open(newline="") as fh:
@@ -25,7 +27,7 @@ def antigen_map(antigen_rows: list[dict[str, str]]) -> dict[str, str]:
     out: dict[str, str] = {}
     for row in antigen_rows:
         label = row.get("Ag_label") or row.get("antigen_label") or row.get("label", "")
-        seq = row.get("antigen_sequence") or row.get("sequence", "")
+        seq = row.get("antigen_sequence") or row.get("Ag_sequence") or row.get("sequence", "")
         if label and seq:
             out[label] = seq
     return out
@@ -36,8 +38,8 @@ def build_rows(records: list[dict[str, str]], antigens: dict[str, str]) -> list[
     for i, rec in enumerate(records):
         label = rec.get("label", "")
         ag_label = rec.get("Ag_label", "")
-        seq = rec.get("VHH_sequence", "")
-        antigen_seq = antigens.get(ag_label, "")
+        seq = normalize_binder(rec.get("VHH_sequence", ""))
+        antigen_seq = normalize_antigen(antigens.get(ag_label, ""))
         if not seq or not antigen_seq or label not in ("0", "1"):
             continue
         rows.append(

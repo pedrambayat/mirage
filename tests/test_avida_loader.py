@@ -23,11 +23,19 @@ def test_stage_avida_joins_antigen_sequences() -> None:
         {"VHH_sequence": "QVQL", "Ag_label": "IL6", "label": "1"},
         {"VHH_sequence": "EVQL", "Ag_label": "IL6", "label": "0"},
     ]
-    antigens = {"IL6": "MNSFSTSAFGPVAFSLGLLLVLPAAFPAP"}
+    # mature-domain antigen (no signal prefix, no His run): passes through unchanged
+    antigens = {"IL6": "VPPGEDSKDVAAPHRQ"}
     rows = stage.build_rows(records, antigens)
     assert rows[0]["label"] == "1"
-    assert rows[0]["antigen_sequence"].startswith("MNSF")
+    assert rows[0]["antigen_sequence"] == "VPPGEDSKDVAAPHRQ"
     assert rows[1]["label"] == "0"
+
+
+def test_antigen_map_accepts_ag_sequence_column() -> None:
+    # the real AVIDa antigen file uses the columns "Ag_label" / "Ag_sequence"
+    stage = _load_script("stage_avida.py")
+    mapping = stage.antigen_map([{"Ag_label": "IL-6_WTs", "Ag_sequence": "MNSFSTS"}])
+    assert mapping == {"IL-6_WTs": "MNSFSTS"}
 
 
 def test_avida_loader_yields_examples(tmp_path: Path) -> None:

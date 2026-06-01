@@ -15,6 +15,7 @@ import argparse
 import csv
 from pathlib import Path
 
+from mirage.features.normalize import normalize_antigen, normalize_binder
 from mirage.features.sequence import FEATURE_NAMES, sequence_features
 
 _BASE_COLUMNS = ("pair_id", "vhh_pdb", "antigen_pdb", "label", "iptm")
@@ -47,8 +48,8 @@ def build_feature_rows(
         ant = seqs.get(p["antigen_pdb"])
         if vhh is None or ant is None:
             continue
-        binder_seq = vhh["vhh_sequence"]
-        target_seq = ant["antigen_sequence"]
+        binder_seq = normalize_binder(vhh["vhh_sequence"])
+        target_seq = normalize_antigen(ant["antigen_sequence"])
         if not binder_seq or not target_seq:
             continue
         feats = sequence_features(binder_seq, target_seq)
