@@ -42,6 +42,38 @@ def metrics_at_threshold(
     }
 
 
+def _average_ranks(values: np.ndarray[Any, Any]) -> np.ndarray[Any, Any]:
+    """1-based ranks with ties resolved to their average (scipy rankdata 'average')."""
+    order = np.argsort(values, kind="mergesort")
+    sorted_vals = values[order]
+    n = values.size
+    ranks_sorted = np.arange(1, n + 1, dtype=float)
+    start = 0
+    for end in range(1, n + 1):
+        if end == n or sorted_vals[end] != sorted_vals[start]:
+            if end - start > 1:
+                ranks_sorted[start:end] = (start + 1 + end) / 2.0
+            start = end
+    out = np.empty(n, dtype=float)
+    out[order] = ranks_sorted
+    return out
+
+
+def auroc(scores: np.ndarray[Any, Any], labels: np.ndarray[Any, Any]) -> float:
+    """Threshold-free AUROC via the tie-aware Mann-Whitney U statistic.
+
+    Returns NaN if either class is absent; non-finite scores are dropped."""
+    finite = np.isfinite(scores)
+    s = scores[finite]
+    y = labels[finite].astype(bool)
+    n_pos = int(y.sum())
+    n_neg = int(y.size - n_pos)
+    if n_pos == 0 or n_neg == 0:
+        return math.nan
+    ranks = _average_ranks(s)
+    return float((ranks[y].sum() - n_pos * (n_pos + 1) / 2.0) / (n_pos * n_neg))
+
+
 def _candidate_thresholds(scores: np.ndarray[Any, Any]) -> np.ndarray[Any, Any]:
     uniq = np.unique(scores[np.isfinite(scores)])
     # one threshold just above each distinct score, plus a floor below the min

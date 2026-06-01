@@ -59,3 +59,31 @@ def test_bootstrap_ci_brackets_point_estimate() -> None:
     )
     point = gate.metrics_at_threshold(scores, labels, threshold=1.5)["recall"]
     assert lo <= point <= hi
+
+
+def test_auroc_perfect_separation_and_inverse() -> None:
+    scores = np.asarray([0.1, 0.2, 0.8, 0.9])
+    labels = np.asarray([0, 0, 1, 1])
+    assert gate.auroc(scores, labels) == 1.0
+    assert gate.auroc(-scores, labels) == 0.0
+
+
+def test_auroc_all_ties_is_half() -> None:
+    # every score identical -> no ranking information -> 0.5
+    scores = np.asarray([0.5, 0.5, 0.5, 0.5])
+    labels = np.asarray([0, 1, 0, 1])
+    assert gate.auroc(scores, labels) == 0.5
+
+
+def test_auroc_tie_aware_matches_probability() -> None:
+    # AUROC = P(pos>neg) + 0.5*P(tie). pos={1,2}, neg={0,1}:
+    # (1>0)=1, (1==1)=0.5, (2>0)=1, (2>1)=1 -> 3.5/4 = 0.875
+    scores = np.asarray([0.0, 1.0, 1.0, 2.0])
+    labels = np.asarray([0, 0, 1, 1])
+    assert abs(gate.auroc(scores, labels) - 0.875) < 1e-12
+
+
+def test_auroc_single_class_is_nan() -> None:
+    import math
+
+    assert math.isnan(gate.auroc(np.asarray([0.1, 0.2]), np.asarray([1, 1])))

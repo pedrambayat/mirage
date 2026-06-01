@@ -25,7 +25,12 @@ from typing import Any
 import numpy as np
 
 from mirage.eval.attribution import standardized_contributions
-from mirage.eval.gate import DEFAULT_PREVALENCES, choose_threshold_for_precision, summary_dict
+from mirage.eval.gate import (
+    DEFAULT_PREVALENCES,
+    auroc,
+    choose_threshold_for_precision,
+    summary_dict,
+)
 from mirage.features.sequence import FEATURE_NAMES
 from mirage.model.ms import train_ms
 
@@ -93,12 +98,14 @@ def main() -> int:
         oof[finite_oof], y[finite_oof], target_precision=args.target_precision
     )
     ms_summary = summary_dict(oof[finite_oof], y[finite_oof], threshold=oof_thr)
+    ms_summary["auroc"] = auroc(oof[finite_oof], y[finite_oof])
 
     iptm_finite = np.isfinite(iptm)
     iptm_thr = choose_threshold_for_precision(
         iptm[iptm_finite], y[iptm_finite], target_precision=args.target_precision
     )
     iptm_summary = summary_dict(iptm[iptm_finite], y[iptm_finite], threshold=iptm_thr)
+    iptm_summary["auroc"] = auroc(iptm[iptm_finite], y[iptm_finite])
 
     attribution = standardized_contributions(
         x, y.astype(float), feature_names=list(names), l2=args.l2
@@ -120,7 +127,9 @@ def main() -> int:
     print(
         json.dumps(
             {
+                "ms_auroc": ms_summary["auroc"],
                 "ms_recall": ms_summary["metrics"]["recall"],
+                "iptm_auroc": iptm_summary["auroc"],
                 "iptm_recall": iptm_summary["metrics"]["recall"],
             },
             indent=2,
