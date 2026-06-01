@@ -49,6 +49,9 @@ class MsModel:
 
     @classmethod
     def load(cls, path: Path) -> MsModel:
+        # cls(**data) raises a loud TypeError on schema mismatch (extra or missing
+        # keys). Acceptable for the current single-version artifact; revisit if the
+        # MsModel schema evolves across code versions that must read old artifacts.
         data: dict[str, Any] = json.loads(path.read_text())
         return cls(**data)
 
