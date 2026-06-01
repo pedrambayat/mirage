@@ -12,3 +12,12 @@ EPCAM_ECD: str = (
     "TIDLVQNSSQKTQNDVDIADVAYYFEKDVKGESLFHSKKMDLTVNGEQLDLDPGQT"
     "LIYYVDEKAPEFSM"
 )
+
+# UniProt P05231 (human IL-6) signal peptide, residues 1-29. Present on the raw
+# AVIDa-hIL6 antigen sequences (mature region starts at "VPPGEDSKD..."); absent
+# from Champloo's PDB-derived antigens. Stripped during normalization so both
+# datasets are featurized on the mature antigen.
+IL6_SIGNAL_PEPTIDE: str = "MNSFSTSAFGPVAFSLGLLLVLPAAFPAP"
+
+# Known precursor signal-peptide prefixes to strip from antigen sequences.
+SIGNAL_PEPTIDES: tuple[str, ...] = (IL6_SIGNAL_PEPTIDE,)
