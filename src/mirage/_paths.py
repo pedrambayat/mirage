@@ -1,6 +1,6 @@
 """Filesystem anchors shared across the package.
 
-`repo_root()` resolves the abdisc project root from this module's location,
+`repo_root()` resolves the mirage project root from this module's location,
 so default data/prediction paths are derived in one place rather than being
 recomputed (with magic `parents[...]` indices) in every module that needs them.
 """
@@ -11,7 +11,7 @@ from pathlib import Path
 
 
 def repo_root() -> Path:
-    """Return the abdisc repo root (the directory containing ``src/``)."""
+    """Return the mirage repo root (the directory containing ``src/``)."""
     return Path(__file__).resolve().parents[2]
 
 

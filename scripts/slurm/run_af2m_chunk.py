@@ -2,7 +2,7 @@
 """Run one chunk of a ColabFold AF2-Multimer manifest.
 
 Invoked from the SLURM array task. Pure stdlib so it can run under either
-the abdisc uv env or a bare system Python. Shells out to
+the mirage uv env or a bare system Python. Shells out to
 ``colabfold_batch`` for the actual GPU work; does post-processing
 (symlink ``rank1.pdb``, write consolidated ``scores.json``) in Python.
 

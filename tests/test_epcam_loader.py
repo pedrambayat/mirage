@@ -20,7 +20,7 @@ def test_epcam_loader_requires_data_dir(monkeypatch: pytest.MonkeyPatch) -> None
 
 def test_epcam_loader_rejects_missing_dir() -> None:
     with pytest.raises(FileNotFoundError):
-        get_loader("epcam", data_dir=Path("/nonexistent/path/abdisc-test"))
+        get_loader("epcam", data_dir=Path("/nonexistent/path/mirage-test"))
 
 
 def test_epcam_loader_yields_expected_counts(epcam_data_dir: Path) -> None:

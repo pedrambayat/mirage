@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-`abdisc` uses a Python `src/` layout. Core code lives in `src/abdisc/`: `benchmark/` contains dataset loaders and target metadata, `scorers/` contains scorer interfaces and implementations, `eval/` is for metrics and leaderboard work, `design/` is for design-pipeline integrations, and `cli.py` defines the Typer CLI. Tests live in `tests/` as focused `test_*.py` modules. Design notes and plans live under `docs/superpowers/`. Published outputs belong under `results/published/`; avoid committing large generated artifacts elsewhere.
+`mirage` uses a Python `src/` layout. Core code lives in `src/mirage/`: `benchmark/` contains dataset loaders and target metadata, `scorers/` contains scorer interfaces and implementations, `eval/` is for metrics and leaderboard work, `design/` is for design-pipeline integrations, and `cli.py` defines the Typer CLI. Tests live in `tests/` as focused `test_*.py` modules. Design notes and plans live under `docs/superpowers/`. Published outputs belong under `results/published/`; avoid committing large generated artifacts elsewhere.
 
 ## Build, Test, and Development Commands
 
@@ -11,19 +11,19 @@ Use `uv` for local development:
 ```bash
 uv python install 3.11      # install the supported Python version
 uv sync                     # create/update the locked environment
-uv run abdisc version       # verify the CLI entry point
+uv run mirage version       # verify the CLI entry point
 uv run pytest               # run the test suite
 uv run ruff check           # lint Python files
 uv run ruff format          # format Python files
-uv run mypy src/abdisc      # strict type checking
+uv run mypy src/mirage      # strict type checking
 uv run pre-commit install   # install local commit hooks
 ```
 
-Benchmark examples include `uv run abdisc bench list-scorers`, `uv run abdisc bench list-loaders`, and `uv run abdisc bench score --scorer length --loader epcam --output scores.csv`.
+Benchmark examples include `uv run mirage bench list-scorers`, `uv run mirage bench list-loaders`, and `uv run mirage bench score --scorer length --loader epcam --output scores.csv`.
 
 ## Coding Style & Naming Conventions
 
-Target Python 3.11 and keep code typed. Ruff enforces rules `E`, `F`, `I`, `B`, `UP`, `N`, and `RUF`, with a 100-character line length and double quotes. Mypy runs in strict mode over `src/abdisc`. Use snake_case for functions, modules, variables, CLI callbacks, and test names. Use clear registry names such as `length` or `epcam` for scorers and loaders.
+Target Python 3.11 and keep code typed. Ruff enforces rules `E`, `F`, `I`, `B`, `UP`, `N`, and `RUF`, with a 100-character line length and double quotes. Mypy runs in strict mode over `src/mirage`. Use snake_case for functions, modules, variables, CLI callbacks, and test names. Use clear registry names such as `length` or `epcam` for scorers and loaders.
 
 ## Testing Guidelines
 

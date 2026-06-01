@@ -118,7 +118,7 @@ def _write_prediction(
     """Lay out a synthetic ColabFold-style example directory.
 
     Writes ``rank1.pdb`` (symlink to a named rank-1 unrelaxed PDB), the
-    abdisc wrapper's flat ``scores.json`` (summary only), and ColabFold's
+    mirage wrapper's flat ``scores.json`` (summary only), and ColabFold's
     raw rank-1 scores JSON (per-residue ``plddt`` and per-residue-pair
     ``pae``). The scorer derives the raw scores filename from the
     wrapper summary, so the filename pattern matters.

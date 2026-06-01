@@ -9,7 +9,7 @@ When ``--scramble-confidence`` or ``--wrong-target-confidence`` points
 at a sibling confidence CSV from negative controls, an additional
 analysis is run: AUROC + AP for
 ``{near-native real binder (rmsd<cutoff)} vs {negative control}`` on
-each confidence metric. Smorodina et al. 2026 (the abdisc thesis paper)
+each confidence metric. Smorodina et al. 2026 (the mirage thesis paper)
 argues for PR-AUC under class imbalance; both AUROC and AP are reported
 so the two can be compared directly.
 
@@ -30,7 +30,7 @@ Use::
         --wrong-target-confidence results/published/sabdab_af2m_confidence_wrong_targets.csv \\
         --binder-format-stratify
 
-Stats hand-rolled in numpy — abdisc deliberately avoids scipy / sklearn
+Stats hand-rolled in numpy — mirage deliberately avoids scipy / sklearn
 in the core env. Spearman uses average-rank tie handling; AUROC uses
 the Mann-Whitney U identity with a 0.5 weight for ties; AP uses the
 scikit-learn-equivalent step-precision integral. The optional logistic
@@ -362,7 +362,7 @@ def _per_label_per_format_tables(
     """Run _per_label_table once per binder_format stratum.
 
     Mirrors the Harvey-et-al 2026 finding that AF-M confidence varies by
-    target class — abdisc's cheapest proxy for that is binder_format.
+    target class — mirage's cheapest proxy for that is binder_format.
     """
     out: list[dict[str, Any]] = []
     for fmt in sorted({str(f) for f in binder_format if f}):

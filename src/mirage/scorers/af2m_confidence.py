@@ -7,7 +7,7 @@ and inter-chain PAE aggregates (mean, max, interface-restricted).
 
 Inputs per example (under ``predictions_root/<example_id>/``):
 
-- ``scores.json`` — abdisc AF2-M wrapper's flat summary. Used here only
+- ``scores.json`` — mirage AF2-M wrapper's flat summary. Used here only
   to locate the rank-1 unrelaxed PDB filename (``rank1.pdb`` is a
   symlink, but the filename pattern carries the model index).
 - ``<example_id>_scores_rank_001_alphafold2_multimer_v3_model_<N>_seed_<NNN>.json``
@@ -51,7 +51,7 @@ from mirage.scorers.base import AbstractScorer, BenchmarkExample, Score
 def _rank1_raw_scores_path(pred_dir: Path, summary_path: Path) -> Path:
     """Return the path to ColabFold's raw rank-1 scores JSON.
 
-    The abdisc wrapper's ``scores.json`` carries the rank-1 unrelaxed PDB
+    The mirage wrapper's ``scores.json`` carries the rank-1 unrelaxed PDB
     filename under ``["rank1"]["pdb"]``; the matching raw scores file
     swaps ``_unrelaxed_`` for ``_scores_`` and ``.pdb`` for ``.json``.
     Raises :class:`FileNotFoundError` if the summary doesn't carry a

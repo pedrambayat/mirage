@@ -16,12 +16,12 @@ app.add_typer(bench_app, name="bench")
 
 @app.callback()
 def _root() -> None:
-    """Top-level abdisc CLI; subcommands implement the actual work."""
+    """Top-level mirage CLI; subcommands implement the actual work."""
 
 
 @app.command()
 def version() -> None:
-    """Print the installed abdisc version."""
+    """Print the installed mirage version."""
     typer.echo(__version__)
 
 

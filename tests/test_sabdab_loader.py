@@ -28,7 +28,7 @@ def test_sabdab_loader_requires_data_dir(monkeypatch: pytest.MonkeyPatch) -> Non
 
 def test_sabdab_loader_rejects_missing_dir() -> None:
     with pytest.raises(FileNotFoundError):
-        get_loader("sabdab", data_dir=Path("/nonexistent/abdisc-sabdab-test"))
+        get_loader("sabdab", data_dir=Path("/nonexistent/mirage-sabdab-test"))
 
 
 def test_sabdab_loader_rejects_missing_summary(tmp_path: Path) -> None:
