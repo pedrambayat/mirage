@@ -1,0 +1,151 @@
+{
+  "n": 8228,
+  "n_positive": 91,
+  "target_precision": 0.9,
+  "prevalences": [
+    0.5,
+    0.1,
+    0.01,
+    0.001,
+    0.0001
+  ],
+  "oof_threshold": -5.212572328134752,
+  "shipped_threshold": -4.467777481972475,
+  "ms": {
+    "metrics": {
+      "threshold": -5.212572328134752,
+      "tp": 91.0,
+      "fp": 8131.0,
+      "fn": 0.0,
+      "tn": 6.0,
+      "precision": 0.011067866699099975,
+      "recall": 1.0,
+      "specificity": 0.000737372496005899,
+      "fpr": 0.9992626275039941
+    },
+    "ppv_sweep": [
+      {
+        "prevalence": 0.5,
+        "ppv": 0.5001844111138432
+      },
+      {
+        "prevalence": 0.1,
+        "ppv": 0.10006640759506125
+      },
+      {
+        "prevalence": 0.01,
+        "ppv": 0.010007305320585509
+      },
+      {
+        "prevalence": 0.001,
+        "ppv": 0.0010007371781548312
+      },
+      {
+        "prevalence": 0.0001,
+        "ppv": 0.00010007378427693143
+      }
+    ]
+  },
+  "iptm_floor": {
+    "metrics": {
+      "threshold": 0.9100000000000001,
+      "tp": 4.0,
+      "fp": 2.0,
+      "fn": 87.0,
+      "tn": 8135.0,
+      "precision": 0.6666666666666666,
+      "recall": 0.04395604395604396,
+      "specificity": 0.9997542091679981,
+      "fpr": 0.0002457908320019663
+    },
+    "ppv_sweep": [
+      {
+        "prevalence": 0.5,
+        "ppv": 0.9944393522762
+      },
+      {
+        "prevalence": 0.1,
+        "ppv": 0.952085649096127
+      },
+      {
+        "prevalence": 0.01,
+        "ppv": 0.643673614681831
+      },
+      {
+        "prevalence": 0.001,
+        "ppv": 0.15183377961058886
+      },
+      {
+        "prevalence": 0.0001,
+        "ppv": 0.017571041576019013
+      }
+    ]
+  },
+  "attribution": [
+    {
+      "feature": "length_ratio",
+      "coefficient": 0.030610971257785134,
+      "abs_contribution": 0.030610971257785134
+    },
+    {
+      "feature": "target_length",
+      "coefficient": 0.02893748463142427,
+      "abs_contribution": 0.02893748463142427
+    },
+    {
+      "feature": "binder_length",
+      "coefficient": -0.002888344357312124,
+      "abs_contribution": 0.002888344357312124
+    },
+    {
+      "feature": "binder_polar_frac",
+      "coefficient": 0.0018148063327112281,
+      "abs_contribution": 0.0018148063327112281
+    },
+    {
+      "feature": "target_cysteine_frac",
+      "coefficient": -0.0016185129170390332,
+      "abs_contribution": 0.0016185129170390332
+    },
+    {
+      "feature": "target_net_charge",
+      "coefficient": 0.0011003083246600438,
+      "abs_contribution": 0.0011003083246600438
+    },
+    {
+      "feature": "target_aromatic_frac",
+      "coefficient": -0.0008314543928165239,
+      "abs_contribution": 0.0008314543928165239
+    },
+    {
+      "feature": "binder_cysteine_frac",
+      "coefficient": -0.0006851533762614246,
+      "abs_contribution": 0.0006851533762614246
+    },
+    {
+      "feature": "target_polar_frac",
+      "coefficient": 0.0005419802513328128,
+      "abs_contribution": 0.0005419802513328128
+    },
+    {
+      "feature": "binder_aromatic_frac",
+      "coefficient": 0.0003308721977810888,
+      "abs_contribution": 0.0003308721977810888
+    },
+    {
+      "feature": "binder_net_charge",
+      "coefficient": -0.00018663489797254162,
+      "abs_contribution": 0.00018663489797254162
+    },
+    {
+      "feature": "target_hydrophobic_frac",
+      "coefficient": 0.0001432479760601196,
+      "abs_contribution": 0.0001432479760601196
+    },
+    {
+      "feature": "binder_hydrophobic_frac",
+      "coefficient": 4.924658210330232e-05,
+      "abs_contribution": 4.924658210330232e-05
+    }
+  ]
+}
