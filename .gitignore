@@ -39,3 +39,6 @@ results/*
 
 # Locally-built HMMER (via scripts/install_hmmer.sh) for ANARCI numbering
 .tools/
+
+# Local-only agent guidance (kept out of the public repo)
+/CLAUDE.md
