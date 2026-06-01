@@ -29,6 +29,34 @@
         null,
         null
       ]
+    },
+    "epcam_killing": {
+      "n": 14,
+      "n_positive": 8,
+      "n_negative": 6,
+      "metrics": {
+        "threshold": -4.471919431823002,
+        "tp": 0.0,
+        "fp": 0.0,
+        "fn": 8.0,
+        "tn": 6.0,
+        "precision": null,
+        "recall": 0.0,
+        "specificity": 1.0,
+        "fpr": 0.0
+      },
+      "recall_ci": [
+        0.0,
+        0.0
+      ],
+      "specificity_ci": [
+        1.0,
+        1.0
+      ],
+      "precision_ci": [
+        null,
+        null
+      ]
     }
   }
 }

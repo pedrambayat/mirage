@@ -1,7 +1,7 @@
 # mirage Phase A — sequence-only gate (M-S) results
 
-> **STATUS (2026-06-01): in-distribution DONE; AVIDa orthogonal DONE; EpCAM
-> orthogonal PENDING (labels not yet authored).** All numbers below are real,
+> **STATUS (2026-06-01): Phase A COMPLETE — in-distribution baseline + both
+> orthogonal real-negative sets (AVIDa-hIL6, EpCAM-killing) done.** All numbers below are real,
 > produced by the committed pipeline on **mature-domain-normalized** sequences
 > (ANARCI IMGT variable-domain extraction for binders; signal-peptide + His-tag
 > stripping for antigens — see `docs/superpowers/specs/2026-06-01-sequence-normalization-design.md`).
@@ -62,7 +62,7 @@ real-negative sets.
 | regime | n (pos/neg) | precision [CI] | recall [CI] | specificity [CI] |
 |---|---|---|---|---|
 | AVIDa-hIL6 | 573,891 (20,980 / 552,911) | n/a (0 predicted positive) | 0.000 [0.000, 0.000] | 1.000 [1.000, 1.000] |
-| EpCAM killing | 14 (8/6) | [pending — labels not authored] | [pending] | [pending] |
+| EpCAM killing | 14 (8/6) | n/a (0 predicted positive) | 0.000 [0.000, 0.000] | 1.000 [1.000, 1.000] |
 
 - **AVIDa-hIL6:** the Champloo-frozen gate predicts **NONBIND for all 573,891
   pairs** — zero positive predictions, so recall 0.000 and precision is undefined
@@ -71,6 +71,12 @@ real-negative sets.
   pre-structure baseline with no in-distribution signal (AUROC 0.346). Crucially,
   it holds **after** mature-domain normalization, so it is not an artifact of
   AVIDa's secretion-leader contamination.
+- **EpCAM-killing (designed-binder canary):** same all-negative transfer — the
+  frozen gate predicts NONBIND for all 14 designed VHHs (8 effective / 6
+  ineffective CAR-T killers vs AsPC1), recall 0.000, precision undefined. A
+  sequence-only gate trained on Champloo cognate-vs-shuffled carries nothing that
+  separates functional from non-functional designed EpCAM binders. Tiny n —
+  report with the wide-CI caveat; the point estimate is the expected collapse.
 
 ## Read
 - In-distribution: M-S (sequence-only) is **non-discriminative** (AUROC 0.35);
@@ -78,7 +84,8 @@ real-negative sets.
 - Does the frozen threshold hold its precision off Champloo? **No — it collapses
   to an all-negative classifier on AVIDa's real negatives (recall 0, precision
   undefined).** Expected for a no-signal sequence-only floor; reported plainly.
-- EpCAM canary (designed binders): **pending — labels not yet authored.**
+- EpCAM canary (designed binders): **also collapses all-negative** (recall 0 on
+  14 designed VHHs) — M-S doesn't separate functional from non-functional binders.
 
 **Framing:** a frozen-threshold *collapse* on the orthogonal sets is an
 *expected* outcome for a sequence-only pre-structure baseline, **not** a mirage
@@ -129,6 +136,8 @@ uv run python scripts/analyze_ms_orthogonal.py \
   --output results/published/mirage_ms_orthogonal.json
 ```
 
-**EpCAM orthogonal (pending):** author `../abdisc-data/epcam/epcam_killing_labels.csv`
-(Good: 10,25,26,34,57,61,74,86; Bad: 14,15,16,18,21,73), then re-run
-`analyze_ms_orthogonal.py` with `--epcam-labels ...` added and transcribe its row.
+**EpCAM orthogonal (done):** `../abdisc-data/epcam/epcam_killing_labels.csv`
+(`vhh_id,vhh_sequence,label`; Good: 10,25,26,34,57,61,74,86; Bad: 14,15,16,18,21,73 —
+sequences pulled from `snap/epcam/vhh_epcam_don.csv`) is staged. Add
+`--epcam-labels ../abdisc-data/epcam/epcam_killing_labels.csv` to the AVIDa orthogonal
+command above to reproduce its row.
