@@ -47,6 +47,7 @@ def apply_standardizer(
     mean: np.ndarray[Any, Any],
     std: np.ndarray[Any, Any],
 ) -> np.ndarray[Any, Any]:
+    """Apply a fitted ``(mean, std)`` standardizer to ``x``."""
     result: np.ndarray[Any, Any] = (x - mean) / std
     return result
 
@@ -87,6 +88,12 @@ def fit_logistic_regression(
 
 
 def assign_folds(groups: np.ndarray[Any, Any], *, n_splits: int, seed: int) -> np.ndarray[Any, Any]:
+    """Assign each row to a fold by its group label.
+
+    All rows sharing a group go to the same fold (no group spans train/test),
+    so passing antigen or VHH PDB ids gives leakage-controlled grouped K-fold,
+    while passing per-row ids reduces to ordinary K-fold. Deterministic in ``seed``.
+    """
     rng = np.random.default_rng(seed)
     unique = np.unique(groups)
     shuffled = rng.permutation(unique.size)

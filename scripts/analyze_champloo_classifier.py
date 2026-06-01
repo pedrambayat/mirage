@@ -41,13 +41,9 @@ import numpy as np
 
 from mirage.ml.core import (
     assign_folds,
-    oof_logistic_scores,
-)
-from mirage.ml.core import (
     auroc as _auroc,
-)
-from mirage.ml.core import (
     average_precision as _average_precision,
+    oof_logistic_scores,
 )
 
 _META_FEATURES = (
