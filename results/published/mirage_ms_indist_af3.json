@@ -9,40 +9,40 @@
     0.001,
     0.0001
   ],
-  "oof_threshold": -5.212572328134752,
-  "shipped_threshold": -4.467777481972475,
+  "oof_threshold": -4.942804150040868,
+  "shipped_threshold": -4.471919431823002,
   "ms": {
     "metrics": {
-      "threshold": -5.212572328134752,
+      "threshold": -4.942804150040868,
       "tp": 91.0,
-      "fp": 8131.0,
+      "fp": 8107.0,
       "fn": 0.0,
-      "tn": 6.0,
-      "precision": 0.011067866699099975,
+      "tn": 30.0,
+      "precision": 0.01110026835813613,
       "recall": 1.0,
-      "specificity": 0.000737372496005899,
-      "fpr": 0.9992626275039941
+      "specificity": 0.003686862480029495,
+      "fpr": 0.9963131375199705
     },
     "ppv_sweep": [
       {
         "prevalence": 0.5,
-        "ppv": 0.5001844111138432
+        "ppv": 0.50092341787737
       },
       {
         "prevalence": 0.1,
-        "ppv": 0.10006640759506125
+        "ppv": 0.10033292231812578
       },
       {
         "prevalence": 0.01,
-        "ppv": 0.010007305320585509
+        "ppv": 0.010036633651153898
       },
       {
         "prevalence": 0.001,
-        "ppv": 0.0010007371781548312
+        "ppv": 0.0010036967915500498
       },
       {
         "prevalence": 0.0001,
-        "ppv": 0.00010007378427693143
+        "ppv": 0.00010037001343159735
       }
     ]
   },
@@ -84,68 +84,68 @@
   "attribution": [
     {
       "feature": "length_ratio",
-      "coefficient": 0.030610971257785134,
-      "abs_contribution": 0.030610971257785134
+      "coefficient": 0.01949261880962493,
+      "abs_contribution": 0.01949261880962493
     },
     {
       "feature": "target_length",
-      "coefficient": 0.02893748463142427,
-      "abs_contribution": 0.02893748463142427
-    },
-    {
-      "feature": "binder_length",
-      "coefficient": -0.002888344357312124,
-      "abs_contribution": 0.002888344357312124
+      "coefficient": 0.01890050991791265,
+      "abs_contribution": 0.01890050991791265
     },
     {
       "feature": "binder_polar_frac",
-      "coefficient": 0.0018148063327112281,
-      "abs_contribution": 0.0018148063327112281
+      "coefficient": 0.002130539466700698,
+      "abs_contribution": 0.002130539466700698
     },
     {
       "feature": "target_cysteine_frac",
-      "coefficient": -0.0016185129170390332,
-      "abs_contribution": 0.0016185129170390332
-    },
-    {
-      "feature": "target_net_charge",
-      "coefficient": 0.0011003083246600438,
-      "abs_contribution": 0.0011003083246600438
-    },
-    {
-      "feature": "target_aromatic_frac",
-      "coefficient": -0.0008314543928165239,
-      "abs_contribution": 0.0008314543928165239
+      "coefficient": -0.0014801271498904426,
+      "abs_contribution": 0.0014801271498904426
     },
     {
       "feature": "binder_cysteine_frac",
-      "coefficient": -0.0006851533762614246,
-      "abs_contribution": 0.0006851533762614246
+      "coefficient": -0.0011367282815583357,
+      "abs_contribution": 0.0011367282815583357
     },
     {
-      "feature": "target_polar_frac",
-      "coefficient": 0.0005419802513328128,
-      "abs_contribution": 0.0005419802513328128
-    },
-    {
-      "feature": "binder_aromatic_frac",
-      "coefficient": 0.0003308721977810888,
-      "abs_contribution": 0.0003308721977810888
+      "feature": "target_aromatic_frac",
+      "coefficient": -0.0011105997631169827,
+      "abs_contribution": 0.0011105997631169827
     },
     {
       "feature": "binder_net_charge",
-      "coefficient": -0.00018663489797254162,
-      "abs_contribution": 0.00018663489797254162
-    },
-    {
-      "feature": "target_hydrophobic_frac",
-      "coefficient": 0.0001432479760601196,
-      "abs_contribution": 0.0001432479760601196
+      "coefficient": -0.0010118099213485897,
+      "abs_contribution": 0.0010118099213485897
     },
     {
       "feature": "binder_hydrophobic_frac",
-      "coefficient": 4.924658210330232e-05,
-      "abs_contribution": 4.924658210330232e-05
+      "coefficient": -0.0007098051791141606,
+      "abs_contribution": 0.0007098051791141606
+    },
+    {
+      "feature": "binder_length",
+      "coefficient": -0.0007003184754285061,
+      "abs_contribution": 0.0007003184754285061
+    },
+    {
+      "feature": "target_net_charge",
+      "coefficient": 0.0006185758479442236,
+      "abs_contribution": 0.0006185758479442236
+    },
+    {
+      "feature": "binder_aromatic_frac",
+      "coefficient": 0.0001509162345779303,
+      "abs_contribution": 0.0001509162345779303
+    },
+    {
+      "feature": "target_polar_frac",
+      "coefficient": 8.409796751492133e-05,
+      "abs_contribution": 8.409796751492133e-05
+    },
+    {
+      "feature": "target_hydrophobic_frac",
+      "coefficient": 9.975266827235847e-06,
+      "abs_contribution": 9.975266827235847e-06
     }
   ]
 }

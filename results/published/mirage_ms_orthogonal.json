@@ -1,0 +1,34 @@
+{
+  "threshold": -4.471919431823002,
+  "target_precision": 0.9,
+  "regimes": {
+    "avida": {
+      "n": 573891,
+      "n_positive": 20980,
+      "n_negative": 552911,
+      "metrics": {
+        "threshold": -4.471919431823002,
+        "tp": 0.0,
+        "fp": 0.0,
+        "fn": 20980.0,
+        "tn": 552911.0,
+        "precision": null,
+        "recall": 0.0,
+        "specificity": 1.0,
+        "fpr": 0.0
+      },
+      "recall_ci": [
+        0.0,
+        0.0
+      ],
+      "specificity_ci": [
+        1.0,
+        1.0
+      ],
+      "precision_ci": [
+        null,
+        null
+      ]
+    }
+  }
+}
