@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# uv / virtualenv
+.venv/
+venv/
+
+# Tool caches
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Project artifacts
+data/raw/
+data/staged/
+results/*
+!results/published/
+*.pdb
+*.cif
+*.mmcif
+
+# OS / editor
+.DS_Store
+.idea/
+*.swp
+*.swo
+
+# Local env
+.env
+.envrc
