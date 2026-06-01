@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
 from mirage.eval.orthogonal import evaluate_frozen_gate, features_for_examples
 from mirage.model.ms import train_ms
@@ -25,6 +26,11 @@ def test_features_for_examples_shape() -> None:
     assert x.shape[0] == 2
     assert list(y) == [1, 0]
     assert "binder_length" in names
+
+
+def test_features_for_examples_rejects_empty_stream() -> None:
+    with pytest.raises(ValueError, match="no examples"):
+        features_for_examples([], positive_label="BIND")
 
 
 def test_evaluate_frozen_gate_returns_metrics() -> None:

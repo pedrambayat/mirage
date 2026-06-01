@@ -27,6 +27,8 @@ def features_for_examples(
         feats = sequence_features(ex.binder_chains[0], ex.target_chains[0])
         rows.append([feats[name] for name in FEATURE_NAMES])
         labels.append(1 if ex.label == positive_label else 0)
+    if not rows:
+        raise ValueError("features_for_examples received no examples to featurize")
     x = np.array(rows, dtype=float)
     y = np.array(labels, dtype=int)
     return x, y, FEATURE_NAMES

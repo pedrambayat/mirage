@@ -17,7 +17,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-# importing the package triggers loader self-registration
+# ensure built-in loaders self-register (the _registry import below also triggers this)
 import mirage.benchmark  # noqa: F401
 from mirage.benchmark._registry import get_loader
 from mirage.eval.orthogonal import evaluate_frozen_gate, features_for_examples
