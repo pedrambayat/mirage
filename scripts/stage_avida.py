@@ -14,8 +14,6 @@ import argparse
 import csv
 from pathlib import Path
 
-from mirage.features.normalize import normalize_antigen, normalize_binder
-
 
 def read_csv(path: Path) -> list[dict[str, str]]:
     with path.open(newline="") as fh:
@@ -34,12 +32,17 @@ def antigen_map(antigen_rows: list[dict[str, str]]) -> dict[str, str]:
 
 
 def build_rows(records: list[dict[str, str]], antigens: dict[str, str]) -> list[dict[str, str]]:
+    # Sequences are staged raw. AVIDa is featurized through the orthogonal
+    # harness (features_for_examples), which normalizes binder/antigen to mature
+    # domains at scoring time -- so normalizing here too would just double the
+    # (expensive, ~38.6k unique-VHH) ANARCI pass. Champloo, by contrast, is
+    # featurized at staging, so stage_champloo_features.py does normalize.
     rows: list[dict[str, str]] = []
     for i, rec in enumerate(records):
         label = rec.get("label", "")
         ag_label = rec.get("Ag_label", "")
-        seq = normalize_binder(rec.get("VHH_sequence", ""))
-        antigen_seq = normalize_antigen(antigens.get(ag_label, ""))
+        seq = rec.get("VHH_sequence", "")
+        antigen_seq = antigens.get(ag_label, "")
         if not seq or not antigen_seq or label not in ("0", "1"):
             continue
         rows.append(

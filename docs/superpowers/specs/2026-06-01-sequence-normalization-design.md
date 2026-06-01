@@ -90,16 +90,25 @@ the two-call-site wiring below safe.
 
 ## Wiring (Approach A — normalize at staging + harness, `sequence_features` stays pure)
 
-- `scripts/stage_avida.py` — normalize `vhh_sequence` and `antigen_sequence`
-  before writing the staged CSV. ANARCI memoized (`functools.lru_cache`) over
-  *unique* sequences: AVIDa's 573,891 rows have only a few thousand unique VHHs
-  and 31 antigens, so this is seconds, not hours.
+**Rule: normalize at the featurization boundary** (where sequence → feature
+vector happens), not at every place a sequence is written.
+
 - `scripts/stage_champloo_features.py` — normalize both sequences before
-  `sequence_features(...)`.
+  `sequence_features(...)`. Champloo is featurized **at staging**, so this is its
+  featurization boundary. (~106 unique VHHs — fast.)
 - `src/mirage/eval/orthogonal.py::features_for_examples` — normalize each
-  example's `binder_chains[0]` / `target_chains[0]` before featurizing. This is
-  the guarantee that covers **labeled-EpCAM** (loader-only, no staging script)
-  and is an idempotent no-op on the already-normalized staged AVIDa CSV.
+  example's `binder_chains[0]` / `target_chains[0]` before featurizing. AVIDa and
+  labeled-EpCAM are featurized **here at scoring time**, so this is their
+  featurization boundary; it also covers EpCAM (loader-only, no staging script).
+- `scripts/stage_avida.py` — **does NOT normalize.** It only writes raw sequences
+  to a staged CSV that is later featurized through the harness above. Normalizing
+  here too would double the expensive ANARCI pass.
+
+  > **Performance note (corrected):** AVIDa has **38,599 unique VHHs**, and
+  > ANARCI runs ~51 ms/sequence (one `hmmscan` subprocess each), so a full pass
+  > is ~30 min, not "seconds." `_anarci_domain` is memoized in-process over unique
+  > sequences; the single harness pass is the only ANARCI cost. (A persistent /
+  > batched ANARCI cache is a viable future optimization if re-run cost matters.)
 
 `src/mirage/features/sequence.py` is unchanged and stays pure / dependency-light.
 
