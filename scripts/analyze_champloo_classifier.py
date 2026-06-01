@@ -39,6 +39,17 @@ from typing import Any
 
 import numpy as np
 
+from mirage.ml.core import (
+    assign_folds,
+    oof_logistic_scores,
+)
+from mirage.ml.core import (
+    auroc as _auroc,
+)
+from mirage.ml.core import (
+    average_precision as _average_precision,
+)
+
 _META_FEATURES = (
     "vhh_length",
     "antigen_length",
@@ -66,99 +77,6 @@ def _floats(rows: list[dict[str, str]], key: str) -> np.ndarray:
 
 def feature_matrix(rows: list[dict[str, str]], feature_names: tuple[str, ...]) -> np.ndarray:
     return np.column_stack([_floats(rows, name) for name in feature_names])
-
-
-def _auroc(scores: np.ndarray, labels: np.ndarray) -> float:
-    pos = scores[labels == 1]
-    neg = scores[labels == 0]
-    if pos.size == 0 or neg.size == 0:
-        return math.nan
-    diff = pos[:, None] - neg[None, :]
-    wins = (diff > 0).sum() + 0.5 * (diff == 0).sum()
-    return float(wins / (pos.size * neg.size))
-
-
-def _average_precision(scores: np.ndarray, labels: np.ndarray) -> float:
-    n_pos = int((labels == 1).sum())
-    if scores.size == 0 or n_pos == 0:
-        return math.nan
-    order = np.argsort(-scores, kind="mergesort")
-    labels_sorted = labels[order].astype(float)
-    precision = np.cumsum(labels_sorted) / np.arange(1, labels_sorted.size + 1)
-    return float((precision * labels_sorted).sum() / n_pos)
-
-
-def _fit_logistic_regression(
-    x: np.ndarray,
-    y: np.ndarray,
-    *,
-    l2: float,
-    max_iter: int = 100,
-    tolerance: float = 1e-8,
-) -> tuple[float, np.ndarray]:
-    beta = np.zeros(x.shape[1] + 1, dtype=float)
-    design = np.column_stack([np.ones(x.shape[0], dtype=float), x])
-    penalty = np.diag(np.concatenate([[0.0], np.full(x.shape[1], l2, dtype=float)]))
-    prev_loss = math.inf
-    for _ in range(max_iter):
-        logits = np.clip(design @ beta, -40.0, 40.0)
-        pred = 1.0 / (1.0 + np.exp(-logits))
-        weights = np.maximum(pred * (1.0 - pred), 1e-9)
-        gradient = design.T @ (pred - y) + penalty @ beta
-        hessian = (design.T * weights) @ design + penalty
-        try:
-            step = np.linalg.solve(hessian, gradient)
-        except np.linalg.LinAlgError:
-            step = np.linalg.lstsq(hessian, gradient, rcond=None)[0]
-        beta -= step
-        loss = float(
-            -np.sum(y * np.log(pred + 1e-12) + (1.0 - y) * np.log(1.0 - pred + 1e-12))
-            + 0.5 * float(beta @ penalty @ beta)
-        )
-        if abs(prev_loss - loss) < tolerance or float(np.linalg.norm(step)) < tolerance:
-            break
-        prev_loss = loss
-    return float(beta[0]), beta[1:]
-
-
-def _standardize(x_train: np.ndarray, x_apply: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    mean = x_train.mean(axis=0)
-    std = x_train.std(axis=0)
-    std = np.where(std == 0.0, 1.0, std)
-    return (x_train - mean) / std, (x_apply - mean) / std
-
-
-def assign_folds(groups: np.ndarray, *, n_splits: int, seed: int) -> np.ndarray:
-    """Assign each row a fold index by hashing its group with a fixed seed.
-
-    Grouping by ``pair_id`` (each unique) reproduces an ordinary pair-level
-    K-fold; grouping by VHH or antigen PDB yields the leakage-controlled splits.
-    """
-    rng = np.random.default_rng(seed)
-    unique = np.unique(groups)
-    shuffled = rng.permutation(unique.size)
-    fold_of_group = {g: int(shuffled[i] % n_splits) for i, g in enumerate(unique)}
-    return np.asarray([fold_of_group[g] for g in groups], dtype=int)
-
-
-def oof_logistic_scores(
-    x: np.ndarray,
-    y: np.ndarray,
-    folds: np.ndarray,
-    *,
-    l2: float,
-) -> np.ndarray:
-    out = np.full(y.shape, math.nan, dtype=float)
-    for fold in np.unique(folds):
-        test_mask = folds == fold
-        train_mask = ~test_mask
-        y_train = y[train_mask]
-        if y_train.size < 2 or np.unique(y_train).size < 2:
-            continue
-        x_train, x_test = _standardize(x[train_mask], x[test_mask])
-        intercept, coef = _fit_logistic_regression(x_train, y_train, l2=l2)
-        out[test_mask] = intercept + x_test @ coef
-    return out
 
 
 def _metric_row(
