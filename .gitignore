@@ -36,3 +36,6 @@ results/*
 # Local env
 .env
 .envrc
+
+# Locally-built HMMER (via scripts/install_hmmer.sh) for ANARCI numbering
+.tools/
