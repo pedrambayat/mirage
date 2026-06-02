@@ -16,7 +16,7 @@ def test_unrelated_sequences_separate_clusters() -> None:
 
 
 def test_near_identical_merge_at_90pct() -> None:
-    mutated = _VHH[:-1] + "A"  # single substitution
+    mutated = _VHH[:-1] + "C"  # genuine single substitution (_VHH ends in "A")
     assert greedy_cluster([_VHH, mutated], max_identity=0.9) == [0, 0]
 
 
