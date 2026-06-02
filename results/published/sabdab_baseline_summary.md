@@ -155,13 +155,17 @@ sequences from the cached ESM-2 embeddings.
 
 Two distinct readings, and the distinction is the point:
 
-- **Ranking carries weak same-antigen signal (AUROC 0.617 > 0.5).** Unlike the
-  in-distribution *held-out-antigen* result (AUROC ≈ 0.50), the frozen gate ranks
-  AVIDa pairs modestly above chance. AVIDa is a **single-antigen** task (every VHH
-  vs IL-6), so this is almost certainly **binder-side** signal — properties that
-  correlate with being a real IL-6 binder — **not** antigen-specific
-  complementarity (which is exactly what collapses to chance for *unseen*
-  antigens). It is a different axis, and a weak one.
+- **Ranking carries weak same-antigen signal (AUROC 0.617 > 0.5), and it is
+  provably binder-side.** Unlike the in-distribution *held-out-antigen* result
+  (AUROC ≈ 0.50), the frozen gate ranks AVIDa pairs modestly above chance. AVIDa is
+  a **single-antigen** task (every VHH vs IL-6 ± single-point mutants): the 31
+  antigen embeddings have **mean pairwise cosine 0.9999** (min 0.9995) — essentially
+  one constant vector — whereas binder embeddings span down to cosine 0.78. With a
+  constant antigen input, the bilinear score `e_binderᵀ W e_antigen` reduces to a
+  fixed *linear function of the binder embedding*, so the 0.617 is **necessarily
+  binder-side** — properties that correlate with being a real IL-6 binder — **not**
+  antigen-specific complementarity (which is exactly what collapses to chance for
+  *unseen* antigens). It is a different axis, and a weak one.
 - **The calibrated operating point does NOT transfer.** At the SAbDab-frozen
   threshold the gate predicts ~76% positive with precision 0.041 ≈ prevalence —
   the threshold sits in the wrong place on AVIDa's score distribution. So the
