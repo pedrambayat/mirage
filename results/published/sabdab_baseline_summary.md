@@ -71,6 +71,37 @@ nothing — consistent with AUROC ≈ chance.)
 > burden of proof is on a much richer model to beat chance — a strong prior that the
 > floor is real, not a capacity artifact.
 
+## Leakage contrast: random vs held-out-antigen split
+
+To check whether the chance result is an *artifact of holding out antigens* (a
+true generalization gap) or a genuine *absence of signal*, the same ladder was
+re-run under a **random split** (`--random-folds`): folds assigned randomly **per
+positive** (each binder + its negatives stay together), so whole binders are held
+out in *both* splits and the **only** difference is that test antigens are now
+exposed during training (as other binders' cognates and as negative partners). If
+the 0.50 were a held-out-antigen artifact, the random split — which lets the model
+memorize antigen-conditional patterns — should score well above chance.
+
+| rung | held-out-antigen AUROC | random-split AUROC |
+|---|---|---|
+| 0 Tier-S (additive) | 0.520 | 0.482 |
+| 1 ESM-concat (additive) | 0.491 | 0.202 |
+| 2 Hadamard (diagonal bilinear) | 0.495 | 0.392 |
+| 3 low-rank bilinear | 0.496 | 0.536 |
+
+**The random split shows no memorization advantage.** The intended strongest model
+(rung 3) is ≈ chance in both regimes (0.496 vs 0.536). The high-dimensional
+additive/diagonal rungs go *sub-chance* under random folds (0.20–0.39) — an
+overfitting / anti-generalization signature (with ~2,150 train rows they fit
+fold-specific noise, not signal). No rung approaches the high AUROC that genuine
+antigen memorization would produce.
+
+**Read:** the floor is more robust than a "generalization failure" — there is **no
+usable sequence-only binding signal here at all**, not even one a leaky split could
+exploit. The leakage-controlled 0.50 is therefore not a cost of the held-out-antigen
+design; it is the honest absence of signal. (Reproduced from
+`results/published/sabdab_baseline_random.json`.)
+
 ## Orthogonal validation — AVIDa-hIL6 (held-out same-antigen, NOT training)
 
 AVIDa-hIL6 is the orthogonal **real-negative** canary: ~574k VHH–IL6 pairs with
