@@ -50,3 +50,27 @@ def test_oof_scores_are_finite_and_grouped():
     oof = bilinear_oof_scores(xa, xg, y, folds, rank=8, l2=1e-3, lr=0.1, n_iter=1000, seed=1)
     assert np.isfinite(oof).all()
     assert auroc(oof, y) > 0.7
+
+
+def test_gradient_clipping_keeps_fit_finite_on_amplifying_structure():
+    # Each tower's gradient scales with the OTHER tower's magnitude, so on inputs
+    # with exploitable bilinear structure plain GD grows the projections
+    # geometrically and overflows to nan/inf (this is what the 1280-d SAbDab ESM
+    # embeddings triggered). Gradient clipping (on by default) bounds ||proj||
+    # (~max_grad_norm / l2) and keeps the fit finite regardless of seed.
+    rng = np.random.default_rng(0)
+    n, d, r = 400, 256, 16
+    u = rng.normal(size=(d, r))
+    v = rng.normal(size=(d, r))
+    xa = rng.normal(size=(n, d)) * 3.0
+    xg = rng.normal(size=(n, d)) * 3.0
+    score = np.sum((xa @ u) * (xg @ v), axis=1)
+    y = (score > np.median(score)).astype(int)
+    # teeth: without clipping it diverges, confirming the clip is load-bearing
+    pa_u, pg_u, _ = fit_bilinear(
+        xa, xg, y, rank=r, l2=1e-4, lr=1.0, n_iter=2000, seed=7, max_grad_norm=float("inf")
+    )
+    assert not (np.isfinite(pa_u).all() and np.isfinite(pg_u).all())
+    # with clipping (default) it stays finite
+    pa, pg, b = fit_bilinear(xa, xg, y, rank=r, l2=1e-2, lr=1.0, n_iter=2000, seed=7)
+    assert np.isfinite(pa).all() and np.isfinite(pg).all() and np.isfinite(b)

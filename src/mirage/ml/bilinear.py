@@ -41,11 +41,20 @@ def fit_bilinear(
     lr: float,
     n_iter: int,
     seed: int,
+    max_grad_norm: float = 1.0,
 ) -> tuple[np.ndarray[Any, Any], np.ndarray[Any, Any], float]:
     """Fit projections (P_a, P_g) and bias by full-batch gradient descent.
 
     Inputs are assumed already standardized by the caller. Returns
-    (proj_a [rank x d_a], proj_g [rank x d_g], intercept)."""
+    (proj_a [rank x d_a], proj_g [rank x d_g], intercept).
+
+    The two-tower bilinear loss is non-convex and each tower's gradient scales
+    with the *other* tower's magnitude, so plain GD can grow the projections
+    geometrically and overflow for unlucky inits at high feature dimension.
+    Clipping each projection's gradient norm to ``max_grad_norm`` bounds the
+    per-step growth; combined with the L2 restoring term ``l2 * proj`` it keeps
+    ``||proj||`` bounded (≈ ``max_grad_norm / l2``), so training stays finite
+    regardless of seed. Set ``max_grad_norm`` to ``inf`` to disable clipping."""
     rng = np.random.default_rng(seed)
     n, da = xa.shape
     dg = xg.shape[1]
@@ -60,6 +69,13 @@ def fit_bilinear(
         resid = _sigmoid(logits) - yf  # n
         g_proj_a = (resid[:, None] * ug).T @ xa / n + l2 * proj_a
         g_proj_g = (resid[:, None] * ua).T @ xg / n + l2 * proj_g
+        if np.isfinite(max_grad_norm):
+            norm_a = float(np.linalg.norm(g_proj_a))
+            norm_g = float(np.linalg.norm(g_proj_g))
+            if norm_a > max_grad_norm:
+                g_proj_a *= max_grad_norm / norm_a
+            if norm_g > max_grad_norm:
+                g_proj_g *= max_grad_norm / norm_g
         proj_a -= lr * g_proj_a
         proj_g -= lr * g_proj_g
         intercept -= lr * float(resid.mean())
@@ -77,6 +93,7 @@ def bilinear_oof_scores(
     lr: float,
     n_iter: int,
     seed: int,
+    max_grad_norm: float = 1.0,
 ) -> np.ndarray[Any, Any]:
     """Out-of-fold bilinear logits, standardizing on each fold's train rows so
     held-out scores never see test statistics."""
@@ -97,6 +114,7 @@ def bilinear_oof_scores(
             lr=lr,
             n_iter=n_iter,
             seed=seed,
+            max_grad_norm=max_grad_norm,
         )
         out[test] = predict_bilinear(
             apply_standardizer(xa[test], ma, sa),

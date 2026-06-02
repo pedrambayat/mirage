@@ -134,7 +134,7 @@ def main() -> int:
     parser.add_argument("--rank", type=int, default=32)
     parser.add_argument("--lr", type=float, default=0.05)
     parser.add_argument("--n-iter", type=int, default=2000)
-    parser.add_argument("--bilinear-l2", type=float, default=1e-3)
+    parser.add_argument("--bilinear-l2", type=float, default=1e-2)
     parser.add_argument("--target-precision", type=float, default=0.9)
     parser.add_argument("--seed", type=int, default=20260601)
     args = parser.parse_args()
