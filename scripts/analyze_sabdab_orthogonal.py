@@ -22,6 +22,7 @@ import json
 from pathlib import Path
 
 from mirage.benchmark._registry import get_loader  # AvidaLoader self-registers as "avida"
+from mirage.eval.gate import auroc
 from mirage.eval.orthogonal import evaluate_frozen_gate, features_for_examples_embedding
 from mirage.features.embeddings import load_embedding_cache
 from mirage.model.bilinear import BilinearModel
@@ -51,9 +52,14 @@ def main() -> int:
         examples, cache, positive_label=args.positive_label, layout=args.layout
     )
     result = evaluate_frozen_gate(model, x, y)
+    # Threshold-free discrimination on the orthogonal set (parity with the
+    # in-distribution analysis): the operating-point metrics alone can mislead
+    # when the frozen threshold sits in the tail of a new score distribution.
+    result["auroc"] = auroc(model.predict_logit(x), y)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2, default=str))
     print(json.dumps(result["metrics"], indent=2, default=str))
+    print(f"AUROC={result['auroc']}")
     print(f"Wrote {args.output}")
     return 0
 
