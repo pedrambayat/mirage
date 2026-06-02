@@ -76,3 +76,29 @@ def evaluate_frozen_gate(
         if has_both
         else (float("nan"), float("nan")),
     }
+
+
+def features_for_examples_embedding(
+    examples: Iterable[BenchmarkExample],
+    cache: dict[str, np.ndarray[Any, Any]],
+    *,
+    positive_label: str,
+    layout: str,
+) -> tuple[np.ndarray[Any, Any], np.ndarray[Any, Any]]:
+    """Build embedding paired features for a stream of examples, normalizing each
+    sequence to its mature domain first (so lookups hit the cache, which is keyed
+    on normalized sequences). Raises KeyError if a sequence was not embedded."""
+    from mirage.features.embeddings import paired_matrix
+
+    pairs: list[tuple[str, str]] = []
+    labels: list[int] = []
+    for ex in examples:
+        binder = normalize_binder(ex.binder_chains[0])
+        antigen = ":".join(normalize_antigen(c) for c in ex.target_chains)
+        pairs.append((binder, antigen))
+        labels.append(1 if ex.label == positive_label else 0)
+    if not pairs:
+        raise ValueError("features_for_examples_embedding received no examples")
+    x = paired_matrix(pairs, cache, layout=layout)
+    y = np.array(labels, dtype=int)
+    return x, y
