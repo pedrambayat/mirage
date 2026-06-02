@@ -134,6 +134,34 @@ uv run python scripts/analyze_sabdab_baseline.py \
   --model-out results/published/sabdab_bilinear_model.json
 ```
 
+### AVIDa transfer (orthogonal guardrail)
+
+AVIDa is featurized from its OWN embedding cache (its ~38.6k unique VHHs are not
+in the SAbDab cache). Build that cache, then apply the frozen gate unchanged.
+
+```bash
+# 4a. Stage AVIDa (raw; see results/published/mirage_phase_a_summary.md for inputs)
+uv run python scripts/stage_avida.py \
+  --records data/raw/avida/AVIDa-hIL6.csv \
+  --antigens data/raw/avida/antigen_sequences.csv \
+  --output data/staged/avida/avida_staged.csv
+
+# 4b. Build AVIDa's unique normalized-sequence manifest (~30-min ANARCI pass over
+#     38.6k unique VHHs) and embed it with ESM-2 650M into a SEPARATE cache:
+#       data/staged/avida/avida_unique_seqs.txt -> avida_embeddings.npy + avida_keys.txt
+#     (normalize each unique vhh_sequence with normalize_binder and each
+#     antigen_sequence with normalize_antigen, then run scripts/embed_sequences.py
+#     on that manifest via the esm env / a GPU SLURM job).
+
+# 4c. Apply the frozen rung-3 gate to AVIDa through the orthogonal harness
+uv run python scripts/analyze_sabdab_orthogonal.py \
+  --avida-csv data/staged/avida/avida_staged.csv \
+  --embeddings data/staged/avida/avida_embeddings.npy \
+  --keys data/staged/avida/avida_keys.txt \
+  --model results/published/sabdab_bilinear_model.json --model-type bilinear \
+  --layout concat --output results/published/sabdab_orthogonal.json
+```
+
 Defaults: `--l2 1.0`, `--rank 32`, `--lr 0.05`, `--n-iter 2000`,
 `--bilinear-l2 1e-2`, `--target-precision 0.9`, `--seed 20260601`. The bilinear
 trainer uses gradient-norm clipping (`max_grad_norm=1.0`) for numerical stability
