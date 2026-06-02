@@ -57,15 +57,41 @@ def test_one_positive_plus_k_negatives_each():
     assert sum(1 for r in rows if r["label"] == "0") == len(pos) * 5
 
 
-def test_negative_cluster_marginal_matches_positive_marginal():
+def _unbalanced_positives(mod, sizes=(10, 20, 30, 40)):
+    pos = []
+    for c, n in enumerate(sizes):
+        for j in range(n):
+            pos.append(
+                mod.Positive(
+                    pair_id=f"p_{c}_{j}",
+                    binder_seq=f"VHH_{c}_{j}",
+                    antigen_seq=f"AG_{c}_{j}",  # distinct antigen per (cluster, j)
+                    antigen_cluster=c,
+                    fold=0,
+                )
+            )
+    return pos
+
+
+def test_negatives_track_positive_cluster_frequency():
+    # Unbalanced clusters give the test teeth: a distribution-matched sampler
+    # (weight ∝ #positives per cluster) draws negatives from FREQUENT clusters
+    # more often than rare ones. A naive uniform-over-clusters sampler would
+    # trend the opposite way (the exclude-self renormalization favors rare
+    # clusters), so the assertions below fail for that wrong implementation.
+    # NB: the negative marginal does NOT equal the positive marginal exactly —
+    # excluding each positive's own cluster skews it (analytically ≈
+    # [0.134, 0.241, 0.308, 0.316] for sizes [10,20,30,40]) — so we assert the
+    # frequency-tracking trend rather than an exact match.
     mod = _load_module()
-    pos = _uniform_positives(mod)
+    pos = _unbalanced_positives(mod)
     rows = mod.build_pairs(pos, k=40, seed=11)
-    neg_clusters = [int(r["antigen_cluster"]) for r in rows if r["label"] == "0"]
-    counts = Counter(neg_clusters)
+    counts = Counter(int(r["antigen_cluster"]) for r in rows if r["label"] == "0")
     total = sum(counts.values())
-    for c in range(4):
-        assert abs(counts[c] / total - 0.25) < 0.05
+    assert counts[0] < counts[1] < counts[2]
+    assert counts[0] + counts[1] < counts[2] + counts[3]
+    # not a flat uniform 1/(K-1) distribution
+    assert counts[3] / total > 0.25
 
 
 def test_build_pairs_is_deterministic():

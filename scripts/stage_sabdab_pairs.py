@@ -84,6 +84,8 @@ def build_pairs(positives: list[Positive], *, k: int, seed: int) -> list[dict[st
             cand = clusters[keep]
             cand_w = weights[keep]
             if cand.size == 0:
+                # Degenerate fold with a single antigen cluster: no cross-cluster
+                # negative is possible, so this positive contributes no negatives.
                 continue
             probs = cand_w / cand_w.sum()
             for j in range(k):
