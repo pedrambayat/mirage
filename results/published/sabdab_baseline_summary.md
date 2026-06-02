@@ -65,11 +65,11 @@ nothing — consistent with AUROC ≈ chance.)
   (M-C, Phase B).
 
 > **Note on "strongest":** within sequence-only, stage 2 (cross-attention over
-> per-residue embeddings, PLM fine-tuning) could in principle extract more, and is
-> the deferred next rung. But the additive→diagonal→low-rank ladder already shows
-> that adding interaction capacity buys *nothing* on held-out antigens here, so the
-> burden of proof is on a much richer model to beat chance — a strong prior that the
-> floor is real, not a capacity artifact.
+> per-residue embeddings) could in principle extract more — the additive→diagonal→
+> low-rank ladder used only *mean-pooled* embeddings, which discard CDR-epitope
+> contact structure. That stage-2 shot was taken (see below) and **also lands at
+> the floor**, confirming the floor is real, not a pooling/capacity artifact. (PLM
+> fine-tuning is out of scope — it would overfit 448 positives.)
 
 ## Leakage contrast: random vs held-out-antigen split
 
@@ -101,6 +101,39 @@ usable sequence-only binding signal here at all**, not even one a leaky split co
 exploit. The leakage-controlled 0.50 is therefore not a cost of the held-out-antigen
 design; it is the honest absence of signal. (Reproduced from
 `results/published/sabdab_baseline_random.json`.)
+
+## Stage 2 — per-residue cross-attention
+
+The stage-1 ladder used only **mean-pooled** embeddings, which discard the
+CDR-epitope **contact** structure a binding model arguably needs. Stage 2 tests
+whether a model over **per-residue** ESM-2 650M embeddings recovers it, under the
+*same* held-out-antigen-cluster OOF split. Two rungs (frozen embeddings; torch in
+the `esm` env, metrics in numpy via `eval/gate.py`):
+
+- **Cross-attention** — binder residues cross-attend to antigen residues
+  (length-masked), attended rep pooled → MLP → logit. The model that *can* use
+  contacts.
+- **Pooled-MLP ablation** — `[B | A | B⊙A]` → MLP → logit. Isolates "attention
+  captured contacts" from "just a deeper nonlinear head with an interaction term."
+
+| model | AUROC | 95% CI |
+|---|---|---|
+| bilinear floor (stage 1) | 0.496 | — |
+| **cross-attention** (per-residue) | **0.496** | [0.468, 0.525] |
+| pooled-MLP ablation | 0.526 | [0.497, 0.556] |
+
+**Read — the floor holds.** The cross-attention head, which had access to
+per-residue contact structure, lands **exactly at the floor (0.496)** with a CI
+straddling chance: per-residue attention recovers nothing transferable. The only
+movement is a marginal +0.03 from the pooled-MLP (a deeper nonlinear head), and
+critically the **attention model did no better than — and slightly below — the
+simpler pooled-MLP**, so the gain is from head nonlinearity, not contact modeling.
+A torch smoke test confirms both models overfit a planted signal (train AUROC
+1.00), so this is a genuine no-signal result, not a dead model. Stage 2 does **not
+rescue** sequence-only; the floor is confirmed and the next step is the
+predictor-conditional structure track (M-C). (Reproduced from
+`results/published/sabdab_stage2.json`; see
+`docs/superpowers/plans/2026-06-02-sabdab-stage2-cross-attention.md`.)
 
 ## Orthogonal validation — AVIDa-hIL6 (held-out same-antigen, NOT training)
 
