@@ -77,6 +77,7 @@ def main() -> int:
             print(f"embedded {i + 1}/{len(seqs)}", flush=True)
 
     args.out_embeddings.parent.mkdir(parents=True, exist_ok=True)
+    args.out_keys.parent.mkdir(parents=True, exist_ok=True)
     np.save(args.out_embeddings, embeddings)
     args.out_keys.write_text("\n".join(seqs) + "\n")
     print(f"Wrote {embeddings.shape} to {args.out_embeddings} and keys to {args.out_keys}")
