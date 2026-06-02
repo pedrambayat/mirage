@@ -1,12 +1,11 @@
 # mirage — SAbDab sequence-only binding baseline (M-S floor)
 
-> **STATUS (2026-06-02): in-distribution ladder COMPLETE.** All numbers below are
-> real, produced by the committed pipeline on mature-domain-normalized SAbDab
-> sequences (ANARCI IMGT variable-domain extraction for VHH binders;
-> signal-peptide + His-tag stripping for antigens). ESM-2 650M embeddings are
-> mean-pooled (chunked length-weighted for antigens > 1022 aa). No numbers are
-> fabricated. The AVIDa held-out transfer (orthogonal guardrail) is computed
-> separately; see that section.
+> **STATUS (2026-06-02): COMPLETE — in-distribution ladder + AVIDa transfer.**
+> All numbers below are real, produced by the committed pipeline on
+> mature-domain-normalized sequences (ANARCI IMGT variable-domain extraction for
+> VHH binders; signal-peptide + His-tag stripping for antigens). ESM-2 650M
+> embeddings are mean-pooled (chunked length-weighted for antigens > 1022 aa).
+> No numbers are fabricated.
 
 **Caveat up front:** M-S is the *pre-structure baseline*. It does not consume
 predictor confidence (ipTM / PAE / pLDDT) and so does **not** answer mirage's
@@ -81,11 +80,35 @@ applied unchanged through the existing `evaluate_frozen_gate` harness
 (`scripts/analyze_sabdab_orthogonal.py`), scoring AVIDa's mature-domain-normalized
 sequences from the cached ESM-2 embeddings.
 
-_Transfer numbers pending — computed in a separate run (38.6k unique AVIDa VHHs
-require an ANARCI normalization pass + ESM embedding). This row will be filled from
-`results/published/sabdab_orthogonal.json`. Expected behavior, given the
-in-distribution chance result: a degenerate near-all-negative transfer (the gate
-carries no signal to export), mirroring the Phase A M-S AVIDa canary._
+**Result** (n=573,891; 20,980 binders / 552,911 non-binders; prevalence 0.037):
+
+| metric | value | note |
+|---|---|---|
+| **AUROC** (threshold-free) | **0.617** | modestly but robustly above chance (huge n, tight CIs) |
+| recall @ frozen thr (−4.107) | 0.855 | gate calls ~76% of pairs positive |
+| specificity | 0.242 | |
+| precision | 0.041 [0.041, 0.041] | ≈ the 0.037 base rate |
+
+Two distinct readings, and the distinction is the point:
+
+- **Ranking carries weak same-antigen signal (AUROC 0.617 > 0.5).** Unlike the
+  in-distribution *held-out-antigen* result (AUROC ≈ 0.50), the frozen gate ranks
+  AVIDa pairs modestly above chance. AVIDa is a **single-antigen** task (every VHH
+  vs IL-6), so this is almost certainly **binder-side** signal — properties that
+  correlate with being a real IL-6 binder — **not** antigen-specific
+  complementarity (which is exactly what collapses to chance for *unseen*
+  antigens). It is a different axis, and a weak one.
+- **The calibrated operating point does NOT transfer.** At the SAbDab-frozen
+  threshold the gate predicts ~76% positive with precision 0.041 ≈ prevalence —
+  the threshold sits in the wrong place on AVIDa's score distribution. So the
+  *gate* (threshold-and-all) adds essentially nothing, even though the *ranking*
+  is slightly informative.
+
+This is a sharper outcome than the Phase A M-S AVIDa canary (which collapsed
+all-negative): here the frozen ranking is weakly above chance on the same-antigen
+set while the operating point is miscalibrated. It does **not** contradict the
+floor — the floor is about *held-out-antigen* generalization, where the signal is
+absent (AUROC ≈ 0.50). Reported from `results/published/sabdab_orthogonal.json`.
 
 ## How to reproduce
 
