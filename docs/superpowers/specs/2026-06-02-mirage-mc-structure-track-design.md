@@ -116,6 +116,16 @@ can read exactly where discrimination appears:
   Geometry is computed from the predicted complex alone.
 - Curated subset keeps the head ~6–10 features per rung — the Dan-defensible
   discipline for 448 positives.
+- **Rung 3 robustness — row-preserving CDR fallback.** Predictors can render
+  distorted CDR loops when a VHH is forced against a non-cognate antigen, and ANARCI
+  may fail to confidently map the CDR3 onto the predicted binder chain. When that
+  happens the row is **not dropped** (dropping would desync the rung tables and break
+  the apples-to-apples comparison against Rung 0); instead the CDR-engagement
+  features take a **default value (0.0)** and a per-row `cdr_mapping_ok` flag plus an
+  overall **CDR-mapping failure rate** are recorded and reported. A high failure rate
+  is itself a finding (a structural signal that non-cognate poses degrade the CDR),
+  not a silent gap. All rungs are evaluated on the **same row set** so deltas between
+  rungs are paired.
 
 ## 7. Model & gate (D)
 
@@ -131,13 +141,33 @@ can read exactly where discrimination appears:
 
 ## 8. Evaluation design (E)
 
-1. **Headline — SAbDab-internal OOF** (held-out-antigen-cluster 5-fold, the *same*
-   folds as M-S): does each rung beat **0.496**? Mandatory apples-to-apples claim.
-2. **Cross-regime transfer (enabled by Champloo-Protenix):** train on Champloo
-   (546 rows), freeze, apply to the SAbDab reservoir via the `FrozenGate` /
-   `evaluate_frozen_gate` harness — mirage's "cross-regime precision stability"
-   headline. **Guard:** dedup Champloo antigens against SAbDab antigen clusters so
-   the transfer is not leakage.
+1. **SAbDab-internal OOF** (held-out-antigen-cluster 5-fold, the *same* folds as
+   M-S), two nested questions:
+   - **Floor check (necessary, not the headline):** does each rung beat **0.496**?
+     Rung 0 (ipTM-alone) is *expected* to clear it comfortably — predictor confidence
+     already separates cognate from shuffled — so beating 0.496 alone proves little.
+   - **The real headline — does geometry beat confidence?** The primary scientific
+     claim is **Rung 2/3 > Rung 0**: interface geometry (and CDR engagement) adds
+     discriminative signal *on top of* ipTM. This is measured as a **paired
+     rung-delta**: a single bootstrap that resamples rows once and computes
+     ΔAUROC and Δprecision-at-operating-point *between rungs on the same resampled
+     rows* (CI on the difference, not two overlapping marginal CIs). The result
+     counts only if the ΔAUROC CI excludes 0. (`eval/gate.py` gains a paired-delta
+     bootstrap helper.)
+2. **Cross-regime transfer — run BOTH directions** (enabled by having one predictor
+   on both sets). Train a frozen gate on one regime, apply to the other via the
+   `FrozenGate` / `evaluate_frozen_gate` harness — mirage's "cross-regime precision
+   stability" headline. **Guard (both directions):** dedup Champloo antigens against
+   SAbDab antigen clusters so the transfer is not leakage.
+   - **2a. SAbDab → Champloo (the robust direction):** train on SAbDab (~450
+     positives), test on the Champloo diagonal. The larger, more diverse training set
+     yields a better-fit gate; this asks whether SAbDab's structural rules generalize
+     to Champloo. Treat as the *primary* transfer result.
+   - **2b. Champloo → SAbDab (the original direction):** train on Champloo (546 rows),
+     test on the SAbDab reservoir. **Inverted-transfer caveat:** training on 91
+     positives and testing on a large diverse reservoir means a *failure here may be
+     a false negative from underfitting*, not evidence the signal is absent — so 2b is
+     read only in light of 2a, never on its own.
 3. **Random-split leakage contrast** (M-S `--random-folds` analog): confirms any
    held-out signal is not a memorization artifact.
 4. **Free AF3 companion:** the staged Champloo **AF3** matrix runs the *same*
@@ -165,11 +195,14 @@ can read exactly where discrimination appears:
 
 ## 10. Success criteria & risks (G)
 
-- **Success:** rung-2/3 AUROC **> 0.496** with a non-overlapping bootstrap CI on the
-  SAbDab OOF split, **and** rung-2/3 **> rung-0 (ipTM-alone)** — i.e., interface
-  geometry adds signal beyond confidence. A clean *negative* (geometry does not beat
-  ipTM, or nothing beats 0.496) is also a publishable, Dan-defensible result given
-  the rigor (same folds, random-split contrast, bootstrap CIs).
+- **Success (the headline):** **Rung 2/3 > Rung 0 (ipTM-alone)** with a paired
+  ΔAUROC bootstrap CI that excludes 0 on the SAbDab OOF split — interface geometry
+  adds discriminative signal *on top of* the predictor's own confidence. Beating the
+  M-S **0.496** floor is a *necessary precondition*, not the headline: Rung 0 is
+  expected to clear 0.496 on its own, so the floor-beat alone proves little. A clean
+  *negative* (geometry does not beat ipTM) is also a publishable, Dan-defensible
+  result given the rigor (same folds, paired deltas, random-split contrast, bootstrap
+  CIs).
 - **Risks:**
   1. **Protenix install/runtime on PARCC** — the first feasibility gate; validated by
      the cognate ≫ shuffled ipTM check on the 91 diagonal before the full campaign.
@@ -177,6 +210,12 @@ can read exactly where discrimination appears:
      it relocates the bar to "geometry beats ipTM," which is the real M-C hypothesis.
   3. **448 positives × a curated head** — defended by the random-split contrast,
      SHAP, and L2 regularization, exactly as M-S defended its floor.
+  4. **CDR-mapping failure on distorted non-cognate poses** (Rung 3) — handled by the
+     row-preserving 0.0 default + `cdr_mapping_ok` flag + reported failure rate (§6),
+     so it never silently drops rows or breaks the paired rung deltas.
+  5. **Inverted-transfer false negative** — the Champloo→SAbDab direction (2b) can
+     fail from underfitting on 91 positives rather than absent signal; mitigated by
+     running the robust SAbDab→Champloo direction (2a) as the primary transfer read.
 
 ## 11. Invariants
 
@@ -186,6 +225,11 @@ can read exactly where discrimination appears:
 - **No templates** in Protenix (crystal-leakage guard).
 - Commits **Pedram-authored, no Claude/Anthropic trailer**.
 - Build via **subagent-driven execution**, like the M-S work.
+- **Sequencing dependency:** M-C's random-split contrast (§8.3) and the new
+  paired-delta bootstrap (§8.1) extend `eval/gate.py` code that currently lives on the
+  open M-S **PR #2** (leakage contrast + `--random-folds`). `main` is still partial
+  through commit `e277371`. M-C should branch off PR #2 (or land it first) rather than
+  off the partial `main`, so it inherits that scaffolding.
 
 ## 12. References
 
