@@ -14,7 +14,8 @@ pre-compute) depends on the three things you document here.
 
 You may proceed to Task 2 only when **all** of these hold:
 
-1. ✅ `protenix predict` runs to completion on the `3OGO` GFP-nanobody pair on a B200 and writes a structure + confidence JSON.
+1. ✅ `protenix pred` (alias: `protenix predict`) runs to completion on the `3OGO`
+   GFP-nanobody pair on a B200 and writes a structure + confidence JSON.
 2. ✅ The cognate **ipTM is high** (≳0.7 — GFP nanobody is a real, easy binder; record the exact value).
 3. ✅ `docs/datasets/protenix-output-schema.md` records the **three reconciliation points**:
    - **(A) output structure** — file path/format + which chain ID got the binder vs the antigen (and whether Protenix preserved or reordered input order);
@@ -44,9 +45,10 @@ Keep it **out** of the mirage uv env — it pulls torch-CUDA.
 ```bash
 conda create -y -n protenix python=3.11
 conda activate protenix
-pip install protenix
+pip install --upgrade protenix --index-url https://pypi.org/simple
 python -c "import protenix; print('protenix', getattr(protenix,'__version__','installed'))"
 which protenix                      # confirm the CLI is on PATH
+protenix pred -h                    # current upstream primary inference command
 ```
 
 If `pip install protenix` fails or the CLI name differs in the released version,
@@ -98,21 +100,24 @@ and note the correct format under reconciliation point (C) in the schema doc.
 
 ## Step 3 — Run Protenix on a B200 (MSA server on, for this one pair)
 
-For the *single* smoke pair, let Protenix fetch the MSA from its server
-(`--use_msa_server`). MSA pre-compute/dedup matters only for the 3,234-pair campaign
-(Tasks 5–6), not here.
+For the *single* smoke pair, let Protenix fetch/build the MSA automatically
+(`--use_msa true`, the current default for the base models). MSA pre-compute/dedup
+matters only for the 3,234-pair campaign (Tasks 5–6), not here.
 
 ```bash
 srun -A dbgoodma-goodman-laboratory -p b200-mig45 --gres=gpu:1 --time=01:00:00 --pty bash
 # --- inside the interactive shell ---
 conda activate protenix
 cd /vast/projects/dbgoodma/goodman-laboratory/pbayat/binder-discrimination/mirage
-protenix predict \
-  --input  data/raw/predictions/protenix/_smoke/3OGO.json \
+protenix pred \
+  --input data/raw/predictions/protenix/_smoke/3OGO.json \
   --out_dir data/raw/predictions/protenix/_smoke/3OGO_out \
   --seeds 0 \
-  --use_msa_server
-# (confirm the exact flag names against `protenix predict --help`)
+  --model_name protenix_base_default_v1.0.0 \
+  --use_msa true \
+  --use_template false \
+  --use_default_params true
+# (confirm the exact flag names against `protenix pred --help`)
 ```
 
 Expected: it builds an MSA, runs inference, and writes structures + confidence JSONs
@@ -120,10 +125,10 @@ under `3OGO_out/`. Wall time on a B200 for 372 residues should be small (minutes
 plus MSA time.
 
 **Known gotchas:**
-- *Compute node has no outbound network* → the MSA server call fails. Fixes: run with
-  `--use_msa_server` from a node/login shell that *does* have egress, or precompute
-  the two MSAs first and pass them in (preview of Task 6). Test egress inside the
-  srun shell: `curl -sI https://pypi.org >/dev/null && echo NET-OK || echo NO-NET`.
+- *Compute node has no outbound network* → the automatic MSA search may fail. Fixes:
+  run `protenix prep`/`protenix msa` from a node/login shell that *does* have egress,
+  or precompute the two MSAs first and pass them in (preview of Task 6). Test egress
+  inside the srun shell: `curl -sI https://pypi.org >/dev/null && echo NET-OK || echo NO-NET`.
 - *Weights still downloading* → first run is slow; let it finish, re-run is fast.
 - *OOM on the 45 GB MIG slice* → unlikely at 372 residues; if it happens, use
   `-p b200-mig90` or a full `dgx-b200` GPU.
@@ -192,7 +197,7 @@ Create `docs/datasets/protenix-output-schema.md` and fill in the real values:
 
 protenix version: <from Step 1>
 install command:  <pip install protenix | git + pip -e .>
-predict command:  protenix predict --input ... --out_dir ... --seeds 0 --use_msa_server
+predict command:  protenix pred --input ... --out_dir ... --seeds 0 --model_name protenix_base_default_v1.0.0 --use_msa true --use_template false
 templates: none (open Protenix takes no user templates; leakage guard satisfied)
 
 ## (A) Output structure
@@ -211,9 +216,12 @@ templates: none (open Protenix takes no user templates; leakage guard satisfied)
 - cognate ipTM observed: <0.??>
 
 ## (C) MSA wiring (for Tasks 5–6)
-- precomputed-MSA input field per chain: <e.g. proteinChain.msa.precomputed_msa_dir | path to .a3m>
-- flag to DISABLE the built-in/server MSA search: <e.g. --use_msa_server false | omit flag>
-- MSA tool used by the server / how to run it locally for pre-compute: <notes>
+- precomputed-MSA input field per chain: `proteinChain.msa.precomputed_msa_dir`
+  plus `proteinChain.msa.pairing_db` (current example uses `uniref100`)
+- flag to DISABLE built-in MSA search/use during prediction: `--use_msa false`
+- MSA precompute commands: `protenix prep --input ... --out_dir ...` for full
+  prep, `protenix mt --input ... --out_dir ...` for protein MSA + template, or
+  `protenix msa --input ... --out_dir ... --msa_server_mode protenix` for MSA only
 ```
 
 Anything you couldn't determine, write `UNKNOWN — revisit` rather than guessing; an
@@ -255,7 +263,7 @@ the trimmed fixture.
 
 ## Final checklist (the gate)
 
-- [ ] `protenix` installed; `protenix predict` completes on 3OGO on a B200
+- [ ] `protenix` installed; `protenix pred` completes on 3OGO on a B200
 - [ ] cognate ipTM recorded and **high (≳0.7)**
 - [ ] schema doc records (A) output structure + chain IDs/order, (B) confidence keys, (C) MSA field + disable flag
 - [ ] trimmed fixture committed at `tests/fixtures/protenix/3OGO__3OGO/`
