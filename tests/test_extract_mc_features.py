@@ -149,7 +149,7 @@ def test_build_rows_fault_tolerant(tmp_path: Path, monkeypatch: pytest.MonkeyPat
     results = build_rows([ok_row, boom_row], predictions_root=tmp_path, failed_log=failed_log)
 
     # Run must not have raised
-    # OK row must be in results (prediction_present=="0" because nothing on disk, but still returned)
+    # OK row still returned (prediction_present=="0" since nothing is on disk)
     assert len(results) == 1
     assert results[0]["pair_id"] == "OK__PAIR"
 

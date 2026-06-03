@@ -58,7 +58,7 @@ _FIELDNAMES = ["pdb_id", "vhh_sequence", "antigen_sequence", "is_excluded"]
 
 def _write_champloo_csv(path: Path, rows=_SYNTHETIC_ROWS) -> None:
     with path.open("w", newline="") as fh:
-        writer = csv.DictWriter(fh, fieldnames=_FIELDNAMES + ["extra_col"])
+        writer = csv.DictWriter(fh, fieldnames=[*_FIELDNAMES, "extra_col"])
         writer.writeheader()
         for pdb, vhh, ag, excl in rows:
             writer.writerow(
