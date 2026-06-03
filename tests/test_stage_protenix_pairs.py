@@ -115,3 +115,50 @@ def test_sequence_hash_is_16_hex_chars():
 def test_sequence_hash_differs_for_different_seqs():
     mod = _load_module()
     assert mod.sequence_hash("AAAA") != mod.sequence_hash("CCCC")
+
+
+# ---------------------------------------------------------------------------
+# Multi-chain antigen tests
+# ---------------------------------------------------------------------------
+
+_MULTI_CHAIN_DATA = [
+    {
+        "pair_id": "pair_MC",
+        "binder_seq": "QVQ",
+        "antigen_seq": "AAAA:CCCC",
+        "label": "1",
+        "antigen_cluster": "0",
+        "fold": "0",
+    },
+]
+
+
+def test_examples_from_pairs_csv_multi_chain_antigen_splits(tmp_path):
+    """A colon-delimited antigen_seq must yield separate target_chains."""
+    mod = _load_module()
+    csv_path = tmp_path / "pairs.csv"
+    _write_pairs_csv(csv_path, _MULTI_CHAIN_DATA)
+
+    examples = list(mod.examples_from_pairs_csv(csv_path))
+    assert len(examples) == 1
+    ex = examples[0]
+    assert ex.target_chains == ("AAAA", "CCCC"), (
+        f"Expected ('AAAA', 'CCCC'), got {ex.target_chains}"
+    )
+    # Binder is unchanged
+    assert ex.binder_chains == ("QVQ",)
+
+
+def test_unique_sequences_multi_chain_antigen_split_as_separate(tmp_path):
+    """unique_sequences must return each chain of a colon-delimited antigen separately."""
+    mod = _load_module()
+    csv_path = tmp_path / "pairs.csv"
+    _write_pairs_csv(csv_path, _MULTI_CHAIN_DATA)
+
+    uniq = mod.unique_sequences(csv_path)
+    # The joined string "AAAA:CCCC" must NOT appear; each chain must appear
+    assert "AAAA:CCCC" not in uniq, "Joined antigen string must not be in unique_sequences"
+    assert "AAAA" in uniq
+    assert "CCCC" in uniq
+    assert "QVQ" in uniq
+    assert uniq == {"QVQ", "AAAA", "CCCC"}

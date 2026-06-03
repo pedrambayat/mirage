@@ -356,3 +356,87 @@ def test_protenix_from_env_picks_up_env_vars(
     pred = protenix_from_env()
     assert pred.output_root == tmp_path / "out_env"
     assert pred.staged_root == tmp_path / "stage_env"
+
+
+# ---------------------------------------------------------------------------
+# Multi-chain antigen staging
+# ---------------------------------------------------------------------------
+
+
+def _make_two_chain_example(
+    example_id: str = "mc-test",
+    binder: str = "QVQLVESGG",
+    chain_a: str = "AAAA",
+    chain_b: str = "CCCC",
+) -> BenchmarkExample:
+    return BenchmarkExample(
+        id=example_id,
+        label="POS",
+        binder_chains=(binder,),
+        binder_format="vhh",
+        target_chains=(chain_a, chain_b),
+        target_name="Multi-chain antigen",
+        source="test",
+    )
+
+
+def test_stage_two_chain_antigen_json_has_three_protein_chains(tmp_path: Path) -> None:
+    """A 2-chain antigen must produce 3 proteinChains: [binder, chain_A, chain_B]."""
+    binder_seq = "QVQLVESGG"
+    chain_a = "AAAA"
+    chain_b = "CCCC"
+    pred = _make_predictor(tmp_path)
+    example = _make_two_chain_example(binder=binder_seq, chain_a=chain_a, chain_b=chain_b)
+    pred.stage([example])
+
+    json_path = pred.staged_root / "inputs" / "mc-test.json"
+    payload = json.loads(json_path.read_text())
+
+    seqs = payload["sequences"]
+    assert len(seqs) == 3, f"Expected 3 proteinChains, got {len(seqs)}"
+
+    # Order: binder first, then antigen chains in order
+    assert seqs[0]["proteinChain"]["sequence"] == binder_seq
+    assert seqs[1]["proteinChain"]["sequence"] == chain_a
+    assert seqs[2]["proteinChain"]["sequence"] == chain_b
+
+
+def test_stage_two_chain_antigen_msa_paths_each_chain(tmp_path: Path) -> None:
+    """Each of the 3 proteinChains gets its own correct unpairedMsaPath."""
+    binder_seq = "QVQLVESGG"
+    chain_a = "AAAA"
+    chain_b = "CCCC"
+    pred = _make_predictor(tmp_path)
+    example = _make_two_chain_example(binder=binder_seq, chain_a=chain_a, chain_b=chain_b)
+    pred.stage([example])
+
+    json_path = pred.staged_root / "inputs" / "mc-test.json"
+    payload = json.loads(json_path.read_text())
+    seqs = payload["sequences"]
+
+    binder_msa = seqs[0]["proteinChain"]["unpairedMsaPath"]
+    chain_a_msa = seqs[1]["proteinChain"]["unpairedMsaPath"]
+    chain_b_msa = seqs[2]["proteinChain"]["unpairedMsaPath"]
+
+    assert binder_msa.endswith(f"/{sequence_hash(binder_seq)}.a3m")
+    assert chain_a_msa.endswith(f"/{sequence_hash(chain_a)}.a3m")
+    assert chain_b_msa.endswith(f"/{sequence_hash(chain_b)}.a3m")
+
+    # All paths must be absolute
+    assert Path(binder_msa).is_absolute()
+    assert Path(chain_a_msa).is_absolute()
+    assert Path(chain_b_msa).is_absolute()
+
+
+def test_stage_single_antigen_still_two_chains(tmp_path: Path) -> None:
+    """Existing single-antigen case still produces exactly 2 proteinChains (regression guard)."""
+    binder_seq = "QVQLVESGG"
+    antigen_seq = "ATCDEFGHIKLM"
+    pred = _make_predictor(tmp_path)
+    example = _make_example("ex-single", binder=binder_seq, antigen=antigen_seq)
+    pred.stage([example])
+
+    json_path = pred.staged_root / "inputs" / "ex-single.json"
+    payload = json.loads(json_path.read_text())
+    seqs = payload["sequences"]
+    assert len(seqs) == 2, f"Single-antigen example must have 2 proteinChains, got {len(seqs)}"

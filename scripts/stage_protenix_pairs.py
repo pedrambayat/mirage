@@ -45,7 +45,7 @@ def examples_from_pairs_csv(path: Path) -> Iterator[BenchmarkExample]:
                 label=row["label"],
                 binder_chains=(row["binder_seq"],),
                 binder_format="vhh",
-                target_chains=(row["antigen_seq"],),
+                target_chains=tuple(row["antigen_seq"].split(":")),
                 target_name="",
                 source="pairs_csv",
                 metadata={
@@ -65,7 +65,8 @@ def unique_sequences(path: Path) -> set[str]:
     with path.open(newline="") as fh:
         for row in csv.DictReader(fh):
             seqs.add(row["binder_seq"])
-            seqs.add(row["antigen_seq"])
+            for chain in row["antigen_seq"].split(":"):
+                seqs.add(chain)
     return seqs
 
 

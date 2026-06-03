@@ -161,7 +161,7 @@ def assemble_row(row: dict[str, str], predictions_root: Path) -> dict[str, str]:
         label=row["label"],
         binder_chains=(row["binder_seq"],),
         binder_format="vhh",
-        target_chains=(row["antigen_seq"],),
+        target_chains=tuple(row["antigen_seq"].split(":")),
         target_name="",
         source="pairs_csv",
     )
