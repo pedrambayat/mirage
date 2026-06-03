@@ -99,9 +99,7 @@ def build_champloo_positives(
 
     # Assign folds (grouped by antigen cluster — whole clusters stay together)
     clusters: np.ndarray[int, np.dtype[np.int_]] = np.array([ag_cluster[a] for _, _, a in raw])
-    folds: np.ndarray[int, np.dtype[np.int_]] = assign_folds(
-        clusters, n_splits=n_splits, seed=seed
-    )
+    folds: np.ndarray[int, np.dtype[np.int_]] = assign_folds(clusters, n_splits=n_splits, seed=seed)
 
     return [
         positive_cls(

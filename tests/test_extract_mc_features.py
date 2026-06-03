@@ -185,9 +185,7 @@ def test_end_to_end_real_fixture() -> None:
     out = assemble_row(row, predictions_root=FIXTURE_ROOT)
 
     assert out["prediction_present"] == "1", f"Expected prediction_present=1, got {out}"
-    assert float(out["iptm"]) == pytest.approx(0.9382603, abs=1e-4), (
-        f"iptm mismatch: {out['iptm']}"
-    )
+    assert float(out["iptm"]) == pytest.approx(0.9382603, abs=1e-4), f"iptm mismatch: {out['iptm']}"
     assert float(out["n_interface_residues_binder"]) > 0, (
         f"Expected >0 binder interface residues, got {out['n_interface_residues_binder']}"
     )

@@ -21,23 +21,14 @@ Use::
 from __future__ import annotations
 
 import csv
-import hashlib
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Annotated
 
 import typer
 
+from mirage.pose_predictors.protenix import sequence_hash  # re-export
 from mirage.scorers.base import BenchmarkExample
-
-
-def sequence_hash(seq: str) -> str:
-    """Return the first 16 hex characters of the SHA-1 digest of ``seq``.
-
-    Canonical home: imported by downstream tasks (e.g. ProtenixPosePredictor)
-    to build deterministic per-sequence filenames. Keep this function stable.
-    """
-    return hashlib.sha1(seq.encode()).hexdigest()[:16]
 
 
 def examples_from_pairs_csv(path: Path) -> Iterator[BenchmarkExample]:

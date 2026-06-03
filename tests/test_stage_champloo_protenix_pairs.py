@@ -11,9 +11,7 @@ REPO = Path(__file__).resolve().parents[1]
 
 
 def _load_module(name: str):
-    spec = importlib.util.spec_from_file_location(
-        name, REPO / "scripts" / f"{name}.py"
-    )
+    spec = importlib.util.spec_from_file_location(name, REPO / "scripts" / f"{name}.py")
     assert spec and spec.loader
     mod = importlib.util.module_from_spec(spec)
     sys.modules[name] = mod
@@ -39,18 +37,28 @@ def _load_module(name: str):
 # Homopolymeric antigens — no shared 5-mers across distinct amino acids.
 _SYNTHETIC_ROWS = [
     # pdb_id, vhh_sequence, antigen_sequence (≥37 residues), is_excluded
-    ("PDB1",  "QVQLVESGGGLVQPGGSLRLSCAASGFTFSSYA",  "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",  "FALSE"),  # noqa: E501
-    ("PDB2",  "EVQLVESGGGLVQPGGSLRLSCAASGYIFSSYS",  "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC",  "FALSE"),  # noqa: E501
-    ("PDB3",  "QVQLLESGGGLVQPGGSLRLSCAASGFNIKDTY",  "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD",  "FALSE"),  # noqa: E501
-    ("PDB4",  "EVQLLESGGGLVQPGGSLRLSCAASGFRISDTS",  "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE",  "FALSE"),  # noqa: E501
-    ("PDB5",  "QVQLVESGGALVQAGGSLRLSCAASGRTFSDYA",  "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",  "FALSE"),  # noqa: E501
-    ("PDB6",  "EVQLVESGGALVQAGGSLRLSCAASGYAFSDYS",  "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG",  "FALSE"),  # noqa: E501
-    ("PDB7",  "QVQLQESGGGLVQAGGSLRLSCAASGRTISNYA",  "NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN",  "FALSE"),  # noqa: E501
-    ("PDB8",  "EVQLQESGGGLVQAGGSLRLSCAASGRTFNNYA",  "IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII",  "FALSE"),  # noqa: E501
-    ("PDB9",  "QVQLLESGGGLVQPGGSLRLSCAASGYSISTYA",  "KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK",  "FALSE"),  # noqa: E501
-    ("PDB10", "EVQLLESGGGLVQPGGSLRLSCAASGYGISTYS",  "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL",  "FALSE"),  # noqa: E501
+    ("PDB1", "QVQLVESGGGLVQPGGSLRLSCAASGFTFSSYA", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "FALSE"),
+    ("PDB2", "EVQLVESGGGLVQPGGSLRLSCAASGYIFSSYS", "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC", "FALSE"),
+    ("PDB3", "QVQLLESGGGLVQPGGSLRLSCAASGFNIKDTY", "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD", "FALSE"),
+    ("PDB4", "EVQLLESGGGLVQPGGSLRLSCAASGFRISDTS", "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE", "FALSE"),
+    (
+        "PDB5",
+        "QVQLVESGGALVQAGGSLRLSCAASGRTFSDYA",
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
+        "FALSE",
+    ),
+    ("PDB6", "EVQLVESGGALVQAGGSLRLSCAASGYAFSDYS", "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG", "FALSE"),
+    ("PDB7", "QVQLQESGGGLVQAGGSLRLSCAASGRTISNYA", "NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN", "FALSE"),
+    ("PDB8", "EVQLQESGGGLVQAGGSLRLSCAASGRTFNNYA", "IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII", "FALSE"),
+    ("PDB9", "QVQLLESGGGLVQPGGSLRLSCAASGYSISTYA", "KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK", "FALSE"),
+    (
+        "PDB10",
+        "EVQLLESGGGLVQPGGSLRLSCAASGYGISTYS",
+        "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL",
+        "FALSE",
+    ),
     # Excluded row — must NOT appear in output
-    ("PDB11", "QVQLLESGGGLVQPGGSLRLSCAASGYTFTSSS",  "MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM",  "TRUE"),   # noqa: E501
+    ("PDB11", "QVQLLESGGGLVQPGGSLRLSCAASGYTFTSSS", "MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM", "TRUE"),
 ]
 
 _FIELDNAMES = ["pdb_id", "vhh_sequence", "antigen_sequence", "is_excluded"]
@@ -62,8 +70,13 @@ def _write_champloo_csv(path: Path, rows=_SYNTHETIC_ROWS) -> None:
         writer.writeheader()
         for pdb, vhh, ag, excl in rows:
             writer.writerow(
-                {"pdb_id": pdb, "vhh_sequence": vhh, "antigen_sequence": ag,
-                 "is_excluded": excl, "extra_col": "ignored"}
+                {
+                    "pdb_id": pdb,
+                    "vhh_sequence": vhh,
+                    "antigen_sequence": ag,
+                    "is_excluded": excl,
+                    "extra_col": "ignored",
+                }
             )
 
 
