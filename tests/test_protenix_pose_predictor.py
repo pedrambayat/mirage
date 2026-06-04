@@ -146,7 +146,10 @@ def test_stage_json_has_two_protein_chains_binder_first(tmp_path: Path) -> None:
     pred.stage([example])
 
     json_path = pred.staged_root / "inputs" / "ex-0.json"
-    payload = json.loads(json_path.read_text())
+    raw = json.loads(json_path.read_text())
+    # Protenix `pred` requires a LIST of jobs, not a bare dict.
+    assert isinstance(raw, list) and len(raw) == 1
+    payload = raw[0]
 
     assert payload["name"] == "ex-0"
     seqs = payload["sequences"]
@@ -168,7 +171,7 @@ def test_stage_json_msa_paths_are_absolute_with_correct_hash(tmp_path: Path) -> 
     pred.stage([example])
 
     json_path = pred.staged_root / "inputs" / "ex-0.json"
-    payload = json.loads(json_path.read_text())
+    payload = json.loads(json_path.read_text())[0]
     seqs = payload["sequences"]
 
     binder_msa = seqs[0]["proteinChain"]["unpairedMsaPath"]
@@ -189,7 +192,7 @@ def test_stage_json_has_no_templates_key(tmp_path: Path) -> None:
     pred.stage([example])
 
     json_path = pred.staged_root / "inputs" / "ex-0.json"
-    payload = json.loads(json_path.read_text())
+    payload = json.loads(json_path.read_text())[0]
     seqs = payload["sequences"]
 
     for chain_entry in seqs:
@@ -390,7 +393,7 @@ def test_stage_two_chain_antigen_json_has_three_protein_chains(tmp_path: Path) -
     pred.stage([example])
 
     json_path = pred.staged_root / "inputs" / "mc-test.json"
-    payload = json.loads(json_path.read_text())
+    payload = json.loads(json_path.read_text())[0]
 
     seqs = payload["sequences"]
     assert len(seqs) == 3, f"Expected 3 proteinChains, got {len(seqs)}"
@@ -411,7 +414,7 @@ def test_stage_two_chain_antigen_msa_paths_each_chain(tmp_path: Path) -> None:
     pred.stage([example])
 
     json_path = pred.staged_root / "inputs" / "mc-test.json"
-    payload = json.loads(json_path.read_text())
+    payload = json.loads(json_path.read_text())[0]
     seqs = payload["sequences"]
 
     binder_msa = seqs[0]["proteinChain"]["unpairedMsaPath"]
@@ -437,6 +440,6 @@ def test_stage_single_antigen_still_two_chains(tmp_path: Path) -> None:
     pred.stage([example])
 
     json_path = pred.staged_root / "inputs" / "ex-single.json"
-    payload = json.loads(json_path.read_text())
+    payload = json.loads(json_path.read_text())[0]
     seqs = payload["sequences"]
     assert len(seqs) == 2, f"Single-antigen example must have 2 proteinChains, got {len(seqs)}"

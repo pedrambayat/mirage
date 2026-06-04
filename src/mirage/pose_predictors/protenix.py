@@ -184,8 +184,11 @@ class ProtenixPosePredictor(AbstractPosePredictor):
                     }
                 }
             )
-        payload: dict[str, Any] = {"name": example.id, "sequences": sequences}
-        path.write_text(json.dumps(payload, indent=2))
+        # Protenix `pred` expects a LIST of jobs, even for a single complex.
+        # Writing a bare dict makes it iterate the dict's string keys and fail with
+        # "string indices must be integers" (it logs a WARNING but still exits 0).
+        job: dict[str, Any] = {"name": example.id, "sequences": sequences}
+        path.write_text(json.dumps([job], indent=2))
 
     def submit(
         self,
