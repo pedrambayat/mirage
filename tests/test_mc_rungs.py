@@ -105,6 +105,13 @@ def test_fit_rung_model_reproduces_ms_recipe() -> None:
     assert model.feature_names == names
     expected_oof = oof_logistic_scores(x, y.astype(float), folds, l2=1.0)
     np.testing.assert_allclose(oof, expected_oof, equal_nan=True)
-    # threshold is chosen on the full-fit model's OWN logits, not the OOF scores
+    # threshold is chosen on the full-fit model's OWN logits, not the OOF scores:
+    # re-deriving the threshold from the full-fit logits must reproduce it exactly.
+    import math
+
+    from mirage.eval.gate import choose_threshold_for_precision
+
     full_logits = model.predict_logit(x)
     assert np.isfinite(full_logits).all()
+    recomputed = choose_threshold_for_precision(full_logits, y.astype(int), target_precision=0.9)
+    assert math.isclose(model.threshold, recomputed)
