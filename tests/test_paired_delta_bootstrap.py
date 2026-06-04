@@ -39,9 +39,18 @@ def test_paired_delta_brackets_zero_for_identical_scores() -> None:
     assert lo <= 0.0 <= hi
 
 
-def test_paired_delta_uses_same_resample_for_both_arms() -> None:
-    # Determinism: same seed -> identical result; the helper must apply one index
-    # draw to BOTH score vectors (paired), not two independent draws.
+def test_paired_delta_identical_arrays_collapse_ci_to_zero() -> None:
+    # True pairing proof: identical arrays make every replicate's delta exactly 0,
+    # so the CI collapses to [0, 0]. Independent (unpaired) resampling would NOT.
+    rng = np.random.default_rng(4)
+    labels = np.array([1] * 25 + [0] * 25)
+    a = rng.uniform(0, 1, 50)
+    point, lo, hi = paired_delta_bootstrap(a, a.copy(), labels, statistic=auroc, n_boot=200, seed=7)
+    assert point == 0.0
+    assert lo == 0.0 and hi == 0.0
+
+
+def test_paired_delta_is_deterministic() -> None:
     rng = np.random.default_rng(4)
     labels = np.array([1] * 25 + [0] * 25)
     a = rng.uniform(0, 1, 50)
@@ -60,3 +69,4 @@ def test_paired_delta_precision_statistic_runs() -> None:
         a, b, labels, statistic=_precision_at(0.5), n_boot=300, seed=9
     )
     assert lo <= point <= hi
+    assert point > 0.0  # arm a separates, arm b is noise -> positive precision delta
