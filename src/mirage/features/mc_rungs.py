@@ -16,6 +16,15 @@ from typing import Any
 
 import numpy as np
 
+from mirage.eval.gate import choose_threshold_for_precision
+from mirage.ml.core import (
+    apply_standardizer,
+    fit_logistic_regression,
+    oof_logistic_scores,
+    standardizer,
+)
+from mirage.model.ms import MsModel
+
 # Single source of truth for which columns each cumulative rung uses.
 RUNG_COLUMNS: dict[int, list[str]] = {
     0: ["iptm"],
@@ -117,3 +126,46 @@ def cdr_mapping_failure_rate(rows: list[dict[str, str]]) -> float:
         return math.nan
     ok = sum(1 for r in rows if float(r["cdr_mapping_ok"]) >= 0.5)
     return 1.0 - ok / len(rows)
+
+
+def fit_rung_model(
+    x: np.ndarray[Any, Any],
+    y: np.ndarray[Any, Any],
+    folds: np.ndarray[Any, Any],
+    *,
+    feature_names: list[str],
+    l2: float,
+    target_precision: float,
+) -> tuple[MsModel, np.ndarray[Any, Any]]:
+    """Assemble a frozen ``MsModel`` for one rung, reproducing the M-S recipe.
+
+    ``train_ms`` is intentionally NOT used (it re-derives folds via ``assign_folds``);
+    here ``folds`` is the exact M-S CSV ``fold`` column so the OOF split is identical
+    to the 0.496 floor's. Steps mirror ``train_ms``: OOF on the given folds for the
+    honest report; a full-data fit for the frozen artifact; the operating threshold
+    chosen on the **full-fit model's own logits** at ``target_precision``.
+
+    Returns ``(model, oof_scores)``.
+    """
+    yf = y.astype(float)
+    oof = oof_logistic_scores(x, yf, folds, l2=l2)
+
+    mean, std = standardizer(x)
+    xs = apply_standardizer(x, mean, std)
+    intercept, coef = fit_logistic_regression(xs, yf, l2=l2)
+
+    full_logits = intercept + xs @ coef
+    finite = np.isfinite(full_logits)
+    threshold = choose_threshold_for_precision(
+        full_logits[finite], yf[finite].astype(int), target_precision=target_precision
+    )
+    model = MsModel(
+        feature_names=list(feature_names),
+        mean=[float(v) for v in mean],
+        std=[float(v) for v in std],
+        intercept=float(intercept),
+        coef=[float(v) for v in coef],
+        threshold=float(threshold),
+        target_precision=float(target_precision),
+    )
+    return model, oof
