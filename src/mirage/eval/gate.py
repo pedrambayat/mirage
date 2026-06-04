@@ -165,6 +165,50 @@ def bootstrap_ci(
     return (float(np.quantile(arr, alpha / 2)), float(np.quantile(arr, 1 - alpha / 2)))
 
 
+def paired_delta_bootstrap(
+    scores_a: np.ndarray[Any, Any],
+    scores_b: np.ndarray[Any, Any],
+    labels: np.ndarray[Any, Any],
+    *,
+    statistic: Callable[[np.ndarray[Any, Any], np.ndarray[Any, Any]], float],
+    n_boot: int = 1000,
+    seed: int = 0,
+    alpha: float = 0.05,
+) -> tuple[float, float, float]:
+    """Paired bootstrap CI on ``statistic(a) - statistic(b)``.
+
+    The two score vectors are aligned row-for-row with ``labels`` (e.g. two rungs'
+    OOF scores for the same rows). Each replicate resamples row indices **once**
+    (stratified by class, like ``bootstrap_ci``) and applies the **same** indices to
+    both arms, so the CI is on the *difference* — not two overlapping marginal CIs.
+    A delta "counts" when the returned CI excludes 0.
+
+    Returns ``(delta_point, ci_lo, ci_hi)`` where ``delta_point`` is the difference
+    on the full (un-resampled) sample.
+    """
+    point = statistic(scores_a, labels) - statistic(scores_b, labels)
+    rng = np.random.default_rng(seed)
+    pos_idx = np.flatnonzero(labels == 1)
+    neg_idx = np.flatnonzero(labels == 0)
+    deltas: list[float] = []
+    for _ in range(n_boot):
+        bp = rng.choice(pos_idx, size=pos_idx.size, replace=True)
+        bn = rng.choice(neg_idx, size=neg_idx.size, replace=True)
+        idx = np.concatenate([bp, bn])
+        da = statistic(scores_a[idx], labels[idx])
+        db = statistic(scores_b[idx], labels[idx])
+        if not (math.isnan(da) or math.isnan(db)):
+            deltas.append(da - db)
+    if not deltas:
+        return (point, math.nan, math.nan)
+    arr = np.asarray(deltas)
+    return (
+        float(point),
+        float(np.quantile(arr, alpha / 2)),
+        float(np.quantile(arr, 1 - alpha / 2)),
+    )
+
+
 # default prevalence grid: from balanced down to a realistic in-silico screen rate
 DEFAULT_PREVALENCES: tuple[float, ...] = (0.5, 0.1, 0.01, 1e-3, 1e-4)
 
