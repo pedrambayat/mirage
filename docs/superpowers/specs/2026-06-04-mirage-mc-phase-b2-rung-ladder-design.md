@@ -60,8 +60,11 @@ the same held-out-antigen-cluster OOF split?**
    "interface-size" proxies. Cumulative head stays ≤ 16 features (28:1 vs 448 positives).
 3. **Rungs are cumulative/nested** (Rung k = Rung k−1 columns + the new block), so the
    paired delta isolates the added block.
-4. **Same folds as M-S, read directly from the CSV `fold` column** — `train_ms` gains
-   an optional `folds` override so no fold is re-derived (zero apples-to-apples risk).
+4. **Same folds as M-S, read directly from the CSV `fold` column.** `model/ms.py`
+   `train_ms` is left **untouched** (the M-S frozen-artifact path stays exactly as
+   shipped); the B2 analysis script computes OOF directly via `oof_logistic_scores`
+   fed the CSV `fold` column, and does the full-data fit + threshold-on-own-logits by
+   hand — so no fold is re-derived (zero apples-to-apples risk) and no shared code moves.
 5. **Frozen transfer model = Rung 3** (geometry + CDR), the full structure-aware gate,
    with Rung 0 transfer reported as the confidence-only contrast. Not a dynamic
    best-OOF pick — fixed for interpretability.
@@ -91,15 +94,17 @@ Built at load time from `sabdab_features.csv` / `champloo_features.csv`:
 
 ## 5. Model & gate
 
-- **Reuse `model/ms.py` `train_ms` essentially unchanged.** Per rung:
-  `train_ms(x, y, feature_names=<cumulative cols>, l2=1.0, target_precision=0.90,
-  seed=<fixed>, folds=<CSV fold column>)` → `(MsModel, oof_scores)`.
-- **One small backward-compatible change to `train_ms`:** add an optional
-  `folds: np.ndarray | None = None` parameter that, when provided, is used directly
-  for the OOF split instead of `assign_folds(groups, …)`. When `None`, behaviour is
-  unchanged. This lets B2 consume the exact M-S `fold` column.
-- **L2 = 1.0** (matches M-S). Threshold chosen on the full-fit model's own logits at
-  `target_precision=0.90` (the M-S review fix — never on OOF scores).
+- **`model/ms.py` `train_ms` is left untouched.** The B2 analysis script assembles a
+  frozen `MsModel` for each rung itself, reusing the same `ml/core` primitives
+  `train_ms` uses, so it reproduces the M-S recipe exactly without moving shared code:
+  1. OOF scores: `oof_logistic_scores(x, y, folds=<CSV fold column>, l2=1.0)` — the CSV
+     `fold` column is passed directly, so the split is identical to M-S.
+  2. Full-data fit: `standardizer` → `apply_standardizer` → `fit_logistic_regression`.
+  3. Threshold: `choose_threshold_for_precision` on the **full-fit model's own logits**
+     at `target_precision=0.90` (the M-S review fix — never on OOF scores).
+  4. Build a `MsModel(feature_names, mean, std, intercept, coef, threshold,
+     target_precision)` and `save()` it — the same artifact contract M-S froze.
+- **L2 = 1.0**, seed fixed (matches M-S).
 - `MsModel` already satisfies the `FrozenGate` protocol (`threshold` + `predict_logit`),
   so cross-regime transfer reuses `eval/orthogonal.evaluate_frozen_gate(model, x, y)`
   unchanged — it already accepts a feature matrix directly.
@@ -133,8 +138,8 @@ Input: `data/staged/mc/sabdab_features.csv`. Output: `results/published/mc_indis
 `results/published/mc_sabdab_model.json`.
 
 Per rung (0–3):
-- Build the cumulative feature matrix; `train_ms` with `folds=<CSV fold col>`,
-  `groups=<antigen_cluster>` (groups retained for provenance though `folds` overrides).
+- Build the cumulative feature matrix; assemble the frozen `MsModel` per §5 (OOF via
+  `oof_logistic_scores` on the CSV `fold` column + full-fit + threshold by hand).
 - Marginal **AUROC + stratified bootstrap CI** (`eval/gate.auroc`, `bootstrap_ci`).
 - Gate metrics at the 0.90-precision operating point + **PPV-vs-prevalence sweep**.
 - **Standardized coefficients** (`eval/attribution.standardized_contributions`) — the
@@ -175,16 +180,17 @@ on the 91 Champloo cells. Self-consistent within AF3 — never pooled with Prote
 
 ## 10. Reuse / new / out-of-scope
 
-- **Reuse wholesale:** `model/ms.py` `train_ms` (+ the tiny `folds` override),
-  `ml/core` (`assign_folds`, `oof_logistic_scores`, `fit_logistic_regression`,
-  standardizers), `eval/gate.py` (`auroc`, `bootstrap_ci`, threshold/operating-point
-  helpers, PPV sweep), `eval/orthogonal.py` (`evaluate_frozen_gate`, `FrozenGate`),
-  `eval/attribution.py` (`standardized_contributions`), `features/clustering.py`
-  (cross-dataset antigen dedup), the `MsModel` JSON artifact contract.
+- **Reuse wholesale (no edits):** `model/ms.py` (`MsModel` artifact contract; `train_ms`
+  left untouched), `ml/core` (`oof_logistic_scores`, `fit_logistic_regression`,
+  `standardizer`/`apply_standardizer`, `assign_folds` for the random-split contrast),
+  `eval/gate.py` (`auroc`, `bootstrap_ci`, `choose_threshold_for_precision`,
+  operating-point + PPV helpers), `eval/orthogonal.py` (`evaluate_frozen_gate`,
+  `FrozenGate`), `eval/attribution.py` (`standardized_contributions`),
+  `features/clustering.py` (cross-dataset antigen dedup).
 - **New:** `eval/gate.paired_delta_bootstrap`; a nested rung feature-matrix builder
   (small module or in-script helper) with the `interface_plddt_missing` derivation;
   `scripts/analyze_mc_indist.py`; `scripts/analyze_mc_cross_regime.py`;
-  `scripts/analyze_mc_af3.py` (optional); the `train_ms` `folds` parameter.
+  `scripts/analyze_mc_af3.py` (optional).
 - **Out of scope (v1):** AVIDa/EpCAM real-negative *structural* tests (deferred; AVIDa
   stays held-out); non-VHH formats; decoy docking; any GPU package in the mirage uv
   env; RMSD/DockQ-to-crystal as feature or label; re-prediction or re-extraction of
@@ -214,8 +220,9 @@ on the 91 Champloo cells. Self-consistent within AF3 — never pooled with Prote
   is positive; identical score vectors → CI contains 0.
 - Nested feature-matrix builder selects the correct cumulative columns per rung.
 - `interface_plddt_missing` derivation (NaN/empty → 1.0, finite → 0.0).
-- `train_ms` `folds` override reproduces the OOF scores of an explicit
-  `oof_logistic_scores(... folds ...)` call and leaves the `folds=None` path unchanged.
+- The per-rung `MsModel` assembly reproduces the M-S recipe: OOF on the CSV `fold`
+  column matches a direct `oof_logistic_scores(..., folds=<col>)` call, and the
+  full-fit threshold is chosen on the model's own logits (not OOF scores).
 
 ## 13. Invariants
 
