@@ -34,6 +34,8 @@ from __future__ import annotations
 
 import csv
 import json
+import os
+import shutil
 import subprocess
 import sys
 import time
@@ -95,7 +97,10 @@ def main(argv: list[str]) -> int:
     # All out_dirs share one parent (the dataset output root); Protenix writes
     # <output_root>/<name>/... per job when given --out_dir <output_root>.
     output_root = pending[0][1].parent
-    work = output_root / f"_chunk_{task_id}"
+    # Work dir unique per (array job, task) so two arrays sharing an output root
+    # never clobber each other's combined_input.json.
+    job_id = os.environ.get("SLURM_ARRAY_JOB_ID", os.environ.get("SLURM_JOB_ID", "0"))
+    work = output_root / f"_chunk_{job_id}_{task_id}"
     work.mkdir(parents=True, exist_ok=True)
     combined_path = work / "combined_input.json"
     combined_path.write_text(json.dumps(combined_jobs))
@@ -119,6 +124,7 @@ def main(argv: list[str]) -> int:
             print(f"[run_protenix_chunk] FAIL {example_id}: {exc}", flush=True)
             n_failed += 1
 
+    shutil.rmtree(work, ignore_errors=True)  # combined_input + pred.log no longer needed
     print(
         f"[run_protenix_chunk] summary task={task_id} done={n_done} "
         f"skipped={n_skipped} failed={n_failed}",
@@ -159,6 +165,11 @@ def _post_process(out_dir: Path, example_id: str) -> None:
     if symlink.exists() or symlink.is_symlink():
         symlink.unlink()
     symlink.symlink_to(sample0_cif.relative_to(out_dir))
+    # Drop diffusion samples 1-4 (each carries a ~7 MB full_data JSON); only the
+    # top-ranked sample_0 is used for features. Keeps the on-disk footprint ~5x
+    # smaller so the shared project quota survives the full campaign.
+    for extra in Path(out_dir).rglob("*_sample_[1-9]*"):
+        extra.unlink()
     print(f"[run_protenix_chunk] rank1.cif → {sample0_cif.relative_to(out_dir)}", flush=True)
 
 
