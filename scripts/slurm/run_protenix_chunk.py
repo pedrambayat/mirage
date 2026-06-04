@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""Run one chunk of a Protenix manifest on a SLURM array task.
+"""Run one chunk of a Protenix manifest on a SLURM array task — BATCHED.
 
 Pure stdlib — runs inside the ``protenix`` conda env which has no mirage
-package and no BioPython. Shells out to ``protenix pred`` for the actual GPU
-work; post-processing (symlink ``rank1.cif``) is done here in Python.
+package and no BioPython. Shells out to ``protenix pred`` ONCE per chunk with a
+combined multi-job input, so the ~40 s model load is amortized across the whole
+chunk (a single complex is ~40 s load + ~30-300 s inference; batching N keeps the
+load fixed). Post-processing (symlink ``rank1.cif`` per complex) is done here.
 
 Usage::
 
@@ -11,11 +13,16 @@ Usage::
 
 Manifest columns (header + rows): ``example_id``, ``input_path``, ``out_dir``.
 The chunk is rows ``[array_task_id * chunk_size, (array_task_id + 1) * chunk_size)``.
+Each ``input_path`` is a single-job Protenix input (a JSON list with one job);
+this runner merges the chunk's not-yet-done jobs into one combined input and runs
+``protenix pred --input combined.json --out_dir <output_root>``. Protenix writes
+``<output_root>/<example_id>/seed_0/predictions/<example_id>_sample_0.cif`` per job,
+and is per-job fault tolerant (a job that fails logs a WARNING and the rest
+continue), so one bad complex never sinks the chunk.
 
 The three Blackwell env vars (``PROTENIX_ROOT_DIR``, ``LAYERNORM_TYPE``,
 ``MMSEQS_SERVICE_HOST_URL``) and ``conda activate protenix`` are set by
-``predict_protenix.slurm``; this runner assumes it is already inside the
-activated env.
+``predict_protenix.slurm``; this runner assumes it is already inside the env.
 
 2026-05-28 Blackwell lock-in flags (do NOT change):
   --trimul_kernel torch --triatt_kernel torch --enable_fusion false
@@ -26,13 +33,14 @@ activated env.
 from __future__ import annotations
 
 import csv
+import json
 import subprocess
 import sys
 import time
 from pathlib import Path
+from typing import Any
 
 # 2026-05-28 lock-in. Keep in sync with ProtenixPosePredictor docstring.
-# These flags do NOT include --input / --out_dir (supplied per row).
 PROTENIX_FLAGS: tuple[str, ...] = (
     "--seeds", "0",
     "--model_name", "protenix_base_default_v1.0.0",
@@ -46,16 +54,10 @@ PROTENIX_FLAGS: tuple[str, ...] = (
     "--need_atom_confidence", "true",
 )  # fmt: skip
 
-MIRAGE_VERSION_KEY = "mirage_predict_protenix_version"
-MIRAGE_VERSION = "1"
-
 
 def main(argv: list[str]) -> int:
     if len(argv) != 4:
-        print(
-            f"usage: {argv[0]} <manifest.tsv> <array_task_id> <chunk_size>",
-            file=sys.stderr,
-        )
+        print(f"usage: {argv[0]} <manifest.tsv> <array_task_id> <chunk_size>", file=sys.stderr)
         return 2
     manifest_path = Path(argv[1])
     task_id = int(argv[2])
@@ -63,57 +65,59 @@ def main(argv: list[str]) -> int:
 
     rows = _read_manifest(manifest_path)
     start = task_id * chunk_size
-    end = start + chunk_size
-    chunk = rows[start:end]
+    chunk = rows[start : start + chunk_size]
     print(
         f"[run_protenix_chunk] task={task_id} chunk_size={chunk_size} "
-        f"rows=[{start}:{end}] selected={len(chunk)}/{len(rows)}",
+        f"rows=[{start}:{start + chunk_size}] selected={len(chunk)}/{len(rows)}",
+        flush=True,
+    )
+    if not chunk:
+        return 0
+
+    # Skip already-done complexes; merge the rest into one combined input.
+    combined_jobs: list[dict[str, Any]] = []
+    pending: list[tuple[str, Path]] = []  # (example_id, out_dir)
+    n_skipped = 0
+    for row in chunk:
+        out_dir = Path(row["out_dir"])
+        if (out_dir / "rank1.cif").is_file():
+            print(f"[run_protenix_chunk] SKIP {row['example_id']} (rank1.cif exists)", flush=True)
+            n_skipped += 1
+            continue
+        jobs = json.loads(Path(row["input_path"]).read_text())
+        combined_jobs.extend(jobs)  # each per-pair input is a 1-element list
+        pending.append((row["example_id"], out_dir))
+
+    if not pending:
+        print(f"[run_protenix_chunk] task={task_id} nothing to do ({n_skipped} cached)", flush=True)
+        return 0
+
+    # All out_dirs share one parent (the dataset output root); Protenix writes
+    # <output_root>/<name>/... per job when given --out_dir <output_root>.
+    output_root = pending[0][1].parent
+    work = output_root / f"_chunk_{task_id}"
+    work.mkdir(parents=True, exist_ok=True)
+    combined_path = work / "combined_input.json"
+    combined_path.write_text(json.dumps(combined_jobs))
+
+    t0 = time.time()
+    rc = _run_batch(combined_path, output_root, work / "pred.log")
+    elapsed = time.time() - t0
+    print(
+        f"[run_protenix_chunk] protenix pred rc={rc} for {len(pending)} jobs ({elapsed:.0f}s)",
         flush=True,
     )
 
+    # Symlink rank1.cif per complex; a missing CIF = that job failed (continue).
     n_done = 0
-    n_skipped = 0
     n_failed = 0
-    for row in chunk:
-        example_id = row["example_id"]
-        input_path = Path(row["input_path"])
-        out_dir = Path(row["out_dir"])
-
-        if (out_dir / "rank1.cif").is_file():
-            print(
-                f"[run_protenix_chunk] SKIP {example_id} (rank1.cif exists)",
-                flush=True,
-            )
-            n_skipped += 1
-            continue
-
-        out_dir.mkdir(parents=True, exist_ok=True)
-        t0 = time.time()
-        ok = _run_one(input_path, out_dir)
-        elapsed = time.time() - t0
-        if not ok:
-            print(
-                f"[run_protenix_chunk] FAIL {example_id} ({elapsed:.1f}s)",
-                flush=True,
-            )
-            n_failed += 1
-            continue
-
+    for example_id, out_dir in pending:
         try:
             _post_process(out_dir, example_id)
+            n_done += 1
         except Exception as exc:
-            print(
-                f"[run_protenix_chunk] POSTPROCESS FAIL {example_id}: {exc}",
-                flush=True,
-            )
+            print(f"[run_protenix_chunk] FAIL {example_id}: {exc}", flush=True)
             n_failed += 1
-            continue
-
-        print(
-            f"[run_protenix_chunk] DONE {example_id} ({elapsed:.1f}s)",
-            flush=True,
-        )
-        n_done += 1
 
     print(
         f"[run_protenix_chunk] summary task={task_id} done={n_done} "
@@ -128,43 +132,34 @@ def _read_manifest(path: Path) -> list[dict[str, str]]:
         return list(csv.DictReader(fh, delimiter="\t"))
 
 
-def _run_one(input_path: Path, out_dir: Path) -> bool:
+def _run_batch(combined_input: Path, output_root: Path, log_path: Path) -> int:
     cmd: list[str] = [
-        "protenix",
-        "pred",
-        "--input", str(input_path),
-        "--out_dir", str(out_dir),
+        "protenix", "pred",
+        "--input", str(combined_input),
+        "--out_dir", str(output_root),
         *PROTENIX_FLAGS,
     ]  # fmt: skip
-    log_path = out_dir / "log.txt"
     with log_path.open("w") as log_fh:
         log_fh.write(f"$ {' '.join(cmd)}\n")
         log_fh.flush()
         result = subprocess.run(cmd, stdout=log_fh, stderr=subprocess.STDOUT)
-    return result.returncode == 0
+    return result.returncode
 
 
 def _post_process(out_dir: Path, example_id: str) -> None:
-    """Symlink ``rank1.cif`` to the sample_0 CIF written by Protenix.
+    """Symlink ``rank1.cif`` to the sample_0 CIF Protenix wrote under out_dir.
 
-    No BioPython / CIF parsing here — chain resolution happens later in the
-    mirage env. We only create the stable alias that ``results_for`` checks.
+    No BioPython / CIF parsing — chain resolution happens later in the mirage env.
     """
-    cif_candidates = list(Path(out_dir).rglob("*sample_0*.cif"))
+    cif_candidates = sorted(Path(out_dir).rglob("*sample_0*.cif"))
     if not cif_candidates:
-        raise FileNotFoundError(f"no sample_0 CIF found under {out_dir} for {example_id}")
-    # Pick the first (usually only) match; rglob order is implementation-defined
-    # but deterministic within a run.
+        raise FileNotFoundError(f"no sample_0 CIF under {out_dir}")
     sample0_cif = cif_candidates[0]
     symlink = out_dir / "rank1.cif"
     if symlink.exists() or symlink.is_symlink():
         symlink.unlink()
-    # Relative symlink so the output dir is relocatable
     symlink.symlink_to(sample0_cif.relative_to(out_dir))
-    print(
-        f"[run_protenix_chunk] rank1.cif → {sample0_cif.relative_to(out_dir)}",
-        flush=True,
-    )
+    print(f"[run_protenix_chunk] rank1.cif → {sample0_cif.relative_to(out_dir)}", flush=True)
 
 
 if __name__ == "__main__":
