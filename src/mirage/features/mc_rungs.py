@@ -79,7 +79,7 @@ def derive_missing_flag(raw_interface_plddt: str) -> float:
     if token in _MISSING_TOKENS:
         return 1.0
     try:
-        return 1.0 if math.isnan(float(raw_interface_plddt)) else 0.0
+        return 0.0 if math.isfinite(float(raw_interface_plddt)) else 1.0
     except ValueError:
         return 1.0
 

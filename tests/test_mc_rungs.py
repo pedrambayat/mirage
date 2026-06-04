@@ -50,10 +50,13 @@ def test_rung_columns_are_nested_and_sized() -> None:
         assert RUNG_COLUMNS[k][: len(RUNG_COLUMNS[k - 1])] == RUNG_COLUMNS[k - 1]
 
 
-def test_derive_missing_flag_marks_empty_and_nan() -> None:
+def test_derive_missing_flag_marks_empty_nan_and_inf() -> None:
     assert derive_missing_flag("") == 1.0
     assert derive_missing_flag("nan") == 1.0
     assert derive_missing_flag("NaN") == 1.0
+    assert derive_missing_flag("none") == 1.0
+    assert derive_missing_flag("inf") == 1.0
+    assert derive_missing_flag("-inf") == 1.0
     assert derive_missing_flag("70.0") == 0.0
 
 
