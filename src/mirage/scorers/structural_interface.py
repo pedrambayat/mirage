@@ -16,7 +16,13 @@ from Bio.PDB.Residue import Residue
 
 from mirage._paths import default_af2m_predictions_root
 from mirage.scorers._registry import register
-from mirage.scorers._structure import chain_residues, load_structure, predicted_chain_ids
+from mirage.scorers._structure import (
+    chain_residues,
+    load_structure,
+    predicted_chain_ids,
+    read_chain_roles_json,
+    resolve_chain_roles_by_sequence,
+)
 from mirage.scorers.base import AbstractScorer, BenchmarkExample, Score
 
 CONTACT_CUTOFFS_A = (4.0, 6.0, 8.0)
@@ -427,21 +433,60 @@ def _add_interface_distance_features(
     )
 
 
+def _find_structure_for_sequence_mode(pred_dir: Path) -> Path | None:
+    """Locate a predicted structure file under ``pred_dir`` for sequence mode.
+
+    Search order (preference): ``rank1.cif``, ``rank1.pdb``, first
+    ``*sample_0*.cif`` found recursively.
+    """
+    for name in ("rank1.cif", "rank1.pdb"):
+        candidate = pred_dir / name
+        if candidate.is_file():
+            return candidate
+    # Fall back to any *sample_0*.cif in the directory tree
+    for candidate in sorted(pred_dir.rglob("*sample_0*.cif")):
+        return candidate
+    return None
+
+
 @register("structural_interface")
 class StructuralInterfaceScorer(AbstractScorer):
-    """Crystal-independent interface geometry from a predicted rank-1 PDB."""
+    """Crystal-independent interface geometry from a predicted rank-1 PDB.
+
+    Parameters
+    ----------
+    predictions_root:
+        Root directory of per-example prediction directories.
+    chain_resolution:
+        ``"positional"`` (default) — chains are assigned A, B, C, … by input
+        order (ColabFold/AF2-M convention).  ``"sequence"`` — chains are mapped
+        to binder/target roles by sequence identity against
+        ``example.binder_chains`` / ``example.target_chains``; also supports
+        mmCIF input and the Protenix nested directory layout.
+    """
 
     name = "structural_interface"
 
-    def __init__(self, predictions_root: str | Path | None = None) -> None:
+    def __init__(
+        self,
+        predictions_root: str | Path | None = None,
+        chain_resolution: str = "positional",
+    ) -> None:
         if predictions_root is None:
             predictions_root = default_af2m_predictions_root()
         self.predictions_root = Path(predictions_root)
+        self.chain_resolution = chain_resolution
 
     def score(self, example: BenchmarkExample) -> Score:
-        pred_path = self.predictions_root / example.id / "rank1.pdb"
-        if not pred_path.is_file():
-            return self.nan_score(example, missing="prediction")
+        if self.chain_resolution == "sequence":
+            pred_dir = self.predictions_root / example.id
+            pred_path = _find_structure_for_sequence_mode(pred_dir)
+            if pred_path is None:
+                return self.nan_score(example, missing="prediction")
+        else:
+            pred_path = self.predictions_root / example.id / "rank1.pdb"
+            if not pred_path.is_file():
+                return self.nan_score(example, missing="prediction")
 
         try:
             return self._score_real(example, pred_path)
@@ -450,12 +495,34 @@ class StructuralInterfaceScorer(AbstractScorer):
 
     def _score_real(self, example: BenchmarkExample, pred_path: Path) -> Score:
         pred = load_structure(pred_path)
-        pred_binder_ids, pred_target_ids = predicted_chain_ids(example)
+        if self.chain_resolution == "sequence":
+            roles = read_chain_roles_json(pred_path.parent / "chain_roles.json")
+            if roles is not None:
+                binder_ids, target_ids = roles
+            else:
+                binder_ids, target_ids = resolve_chain_roles_by_sequence(
+                    pred,
+                    binder_seqs=example.binder_chains,
+                    target_seqs=example.target_chains,
+                )
+        else:
+            binder_ids, target_ids = predicted_chain_ids(example)
+        return self.score_with_chains(example, pred, binder_ids, target_ids)
+
+    def score_with_chains(
+        self,
+        example: BenchmarkExample,
+        pred: Any,
+        binder_ids: list[str],
+        target_ids: list[str],
+    ) -> Score:
+        """Compute interface geometry features given an already-loaded structure
+        and explicit binder/target chain IDs."""
         binder_residues = [
-            residue for chain_id in pred_binder_ids for residue in chain_residues(pred, chain_id)
+            residue for chain_id in binder_ids for residue in chain_residues(pred, chain_id)
         ]
         target_residues = [
-            residue for chain_id in pred_target_ids for residue in chain_residues(pred, chain_id)
+            residue for chain_id in target_ids for residue in chain_residues(pred, chain_id)
         ]
 
         (

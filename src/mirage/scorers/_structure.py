@@ -23,12 +23,15 @@ Chain-identification convention
 
 from __future__ import annotations
 
+import json
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any, cast
 
 import numpy as np
+from Bio.Data.PDBData import protein_letters_3to1
 from Bio.PDB.Atom import Atom
+from Bio.PDB.MMCIFParser import MMCIFParser
 from Bio.PDB.PDBParser import PDBParser
 from Bio.PDB.Residue import Residue
 from Bio.PDB.Structure import Structure
@@ -75,13 +78,97 @@ def predicted_chain_ids(example: BenchmarkExample) -> tuple[list[str], list[str]
 
 
 def load_structure(path: Path) -> Structure:
-    parser = PDBParser(QUIET=True)  # type: ignore[no-untyped-call]
+    if path.suffix.lower() == ".cif":
+        parser: PDBParser | MMCIFParser = MMCIFParser(QUIET=True)  # type: ignore[no-untyped-call]
+    else:
+        parser = PDBParser(QUIET=True)  # type: ignore[no-untyped-call]
     return cast(Structure, parser.get_structure(path.stem, str(path)))  # type: ignore[no-untyped-call]
 
 
 def chain_residues(structure: Structure, chain_id: str) -> list[Residue]:
     chain = structure[0][chain_id]
     return [res for res in chain if res.id[0] == " "]
+
+
+def _chain_sequence(structure: Structure, chain_id: str) -> str:
+    """Return the one-letter sequence of standard residues in a chain."""
+    residues = chain_residues(structure, chain_id)
+    return "".join(
+        protein_letters_3to1.get(res.get_resname().upper(), "X")  # type: ignore[no-untyped-call]
+        for res in residues
+    )
+
+
+def _sequence_identity(query: str, chain_seq: str) -> float:
+    """Compute sequence identity between query and chain_seq.
+
+    If the shorter is a substring of the longer → 1.0. Otherwise the fraction
+    of matching positions over the shorter length.
+    """
+    if not query or not chain_seq:
+        return 0.0
+    shorter, longer = (query, chain_seq) if len(query) <= len(chain_seq) else (chain_seq, query)
+    if shorter in longer:
+        return 1.0
+    n = len(shorter)
+    matches = sum(a == b for a, b in zip(shorter, longer[:n], strict=False))
+    return matches / n
+
+
+def resolve_chain_roles_by_sequence(
+    structure: Structure,
+    binder_seqs: tuple[str, ...],
+    target_seqs: tuple[str, ...],
+) -> tuple[list[str], list[str]]:
+    """Map biological roles (binder / target) to output chain IDs by sequence.
+
+    For each binder sequence then each target sequence, greedily claim the
+    not-yet-used output chain with the highest identity to that sequence.
+    Returns ``(binder_ids, target_ids)`` aligned to the input sequence order.
+    """
+    all_chain_ids = [ch.id for ch in structure[0]]
+    chain_seqs = {cid: _chain_sequence(structure, cid) for cid in all_chain_ids}
+    claimed: set[str] = set()
+
+    def _best_match(query: str) -> str:
+        best_id = ""
+        best_score = -1.0
+        for cid, cseq in chain_seqs.items():
+            if cid in claimed:
+                continue
+            score = _sequence_identity(query, cseq)
+            if score > best_score:
+                best_score = score
+                best_id = cid
+        return best_id
+
+    binder_ids: list[str] = []
+    for seq in binder_seqs:
+        cid = _best_match(seq)
+        if cid:
+            binder_ids.append(cid)
+            claimed.add(cid)
+
+    target_ids: list[str] = []
+    for seq in target_seqs:
+        cid = _best_match(seq)
+        if cid:
+            target_ids.append(cid)
+            claimed.add(cid)
+
+    return binder_ids, target_ids
+
+
+def read_chain_roles_json(path: Path) -> tuple[list[str], list[str]] | None:
+    """Parse a ``chain_roles.json`` file produced by a Protenix staging script.
+
+    Returns ``(binder_ids, target_ids)`` if the file exists, else ``None``.
+    Expected format: ``{"binder": [...], "target": [...]}``.
+    """
+    if not path.is_file():
+        return None
+    data: dict[str, list[str]] = json.loads(path.read_text())
+    return data["binder"], data["target"]
 
 
 def ca_list(residues: list[Residue]) -> list[Atom]:

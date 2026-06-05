@@ -8,9 +8,11 @@ inside the mirage uv env; GPU libraries live in separate envs.
 
 from mirage.pose_predictors.af2m import AF2MPosePredictor
 from mirage.pose_predictors.base import AbstractPosePredictor, StagedManifest
+from mirage.pose_predictors.protenix import ProtenixPosePredictor
 
 __all__ = [
     "AF2MPosePredictor",
     "AbstractPosePredictor",
+    "ProtenixPosePredictor",
     "StagedManifest",
 ]

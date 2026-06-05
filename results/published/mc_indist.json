@@ -1,0 +1,532 @@
+{
+  "n": 2688,
+  "n_positive": 448,
+  "ms_floor_auroc": 0.496,
+  "rungs": {
+    "rung0": {
+      "features": [
+        "iptm"
+      ],
+      "auroc": 0.6900081712372449,
+      "auroc_ci": [
+        0.657673564054528,
+        0.7215757533482143
+      ],
+      "gate": {
+        "metrics": {
+          "threshold": 0.012068272310459928,
+          "tp": 140.0,
+          "fp": 19.0,
+          "fn": 308.0,
+          "tn": 2221.0,
+          "precision": 0.8805031446540881,
+          "recall": 0.3125,
+          "specificity": 0.9915178571428571,
+          "fpr": 0.008482142857142856
+        },
+        "ppv_sweep": [
+          {
+            "prevalence": 0.5,
+            "ppv": 0.9735744089012517
+          },
+          {
+            "prevalence": 0.1,
+            "ppv": 0.8036739380022957
+          },
+          {
+            "prevalence": 0.01,
+            "ppv": 0.2712127082526147
+          },
+          {
+            "prevalence": 0.001,
+            "ppv": 0.03556729840963355
+          },
+          {
+            "prevalence": 0.0001,
+            "ppv": 0.0036710527005836863
+          }
+        ]
+      },
+      "coefficients": [
+        {
+          "feature": "iptm",
+          "coefficient": 0.8380462570954652,
+          "abs_contribution": 0.8380462570954652
+        }
+      ]
+    },
+    "rung1": {
+      "features": [
+        "iptm",
+        "ptm",
+        "interface_pae",
+        "min_interface_pae",
+        "mean_plddt",
+        "interface_plddt_missing"
+      ],
+      "auroc": 0.6912328603316327,
+      "auroc_ci": [
+        0.6606309291294643,
+        0.7224181630660077
+      ],
+      "gate": {
+        "metrics": {
+          "threshold": 0.27922863063105435,
+          "tp": 138.0,
+          "fp": 15.0,
+          "fn": 310.0,
+          "tn": 2225.0,
+          "precision": 0.9019607843137255,
+          "recall": 0.3080357142857143,
+          "specificity": 0.9933035714285714,
+          "fpr": 0.006696428571428571
+        },
+        "ppv_sweep": [
+          {
+            "prevalence": 0.5,
+            "ppv": 0.978723404255319
+          },
+          {
+            "prevalence": 0.1,
+            "ppv": 0.8363636363636358
+          },
+          {
+            "prevalence": 0.01,
+            "ppv": 0.3172413793103438
+          },
+          {
+            "prevalence": 0.001,
+            "ppv": 0.044019138755980666
+          },
+          {
+            "prevalence": 0.0001,
+            "ppv": 0.004579392732702816
+          }
+        ]
+      },
+      "coefficients": [
+        {
+          "feature": "interface_pae",
+          "coefficient": -0.6912339603898279,
+          "abs_contribution": 0.6912339603898279
+        },
+        {
+          "feature": "iptm",
+          "coefficient": 0.6884378966563341,
+          "abs_contribution": 0.6884378966563341
+        },
+        {
+          "feature": "min_interface_pae",
+          "coefficient": 0.6491790462527233,
+          "abs_contribution": 0.6491790462527233
+        },
+        {
+          "feature": "interface_plddt_missing",
+          "coefficient": -0.17730406171289126,
+          "abs_contribution": 0.17730406171289126
+        },
+        {
+          "feature": "mean_plddt",
+          "coefficient": -0.08244760855460266,
+          "abs_contribution": 0.08244760855460266
+        },
+        {
+          "feature": "ptm",
+          "coefficient": -0.04613992499672206,
+          "abs_contribution": 0.04613992499672206
+        }
+      ]
+    },
+    "rung2": {
+      "features": [
+        "iptm",
+        "ptm",
+        "interface_pae",
+        "min_interface_pae",
+        "mean_plddt",
+        "interface_plddt_missing",
+        "n_interface_residues_binder",
+        "n_interface_residues_target",
+        "buried_sasa_proxy_a2",
+        "atom_contacts_5a",
+        "shape_complementarity_proxy",
+        "atom_clash_fraction_2a"
+      ],
+      "auroc": 0.6914182079081632,
+      "auroc_ci": [
+        0.6596222297512755,
+        0.7227179328762755
+      ],
+      "gate": {
+        "metrics": {
+          "threshold": 0.3207626160053348,
+          "tp": 135.0,
+          "fp": 19.0,
+          "fn": 313.0,
+          "tn": 2221.0,
+          "precision": 0.8766233766233766,
+          "recall": 0.3013392857142857,
+          "specificity": 0.9915178571428571,
+          "fpr": 0.008482142857142856
+        },
+        "ppv_sweep": [
+          {
+            "prevalence": 0.5,
+            "ppv": 0.9726224783861671
+          },
+          {
+            "prevalence": 0.1,
+            "ppv": 0.7978723404255315
+          },
+          {
+            "prevalence": 0.01,
+            "ppv": 0.26408450704225295
+          },
+          {
+            "prevalence": 0.001,
+            "ppv": 0.034340659340659246
+          },
+          {
+            "prevalence": 0.0001,
+            "ppv": 0.003540407854984884
+          }
+        ]
+      },
+      "coefficients": [
+        {
+          "feature": "interface_pae",
+          "coefficient": -0.7010014268740773,
+          "abs_contribution": 0.7010014268740773
+        },
+        {
+          "feature": "iptm",
+          "coefficient": 0.6825404043105366,
+          "abs_contribution": 0.6825404043105366
+        },
+        {
+          "feature": "min_interface_pae",
+          "coefficient": 0.664136287918268,
+          "abs_contribution": 0.664136287918268
+        },
+        {
+          "feature": "atom_clash_fraction_2a",
+          "coefficient": -0.26235046168422516,
+          "abs_contribution": 0.26235046168422516
+        },
+        {
+          "feature": "atom_contacts_5a",
+          "coefficient": 0.24031275887748574,
+          "abs_contribution": 0.24031275887748574
+        },
+        {
+          "feature": "interface_plddt_missing",
+          "coefficient": -0.16958636416317596,
+          "abs_contribution": 0.16958636416317596
+        },
+        {
+          "feature": "n_interface_residues_target",
+          "coefficient": -0.11364250891977984,
+          "abs_contribution": 0.11364250891977984
+        },
+        {
+          "feature": "ptm",
+          "coefficient": -0.09244031335374545,
+          "abs_contribution": 0.09244031335374545
+        },
+        {
+          "feature": "mean_plddt",
+          "coefficient": -0.04999009482903442,
+          "abs_contribution": 0.04999009482903442
+        },
+        {
+          "feature": "buried_sasa_proxy_a2",
+          "coefficient": 0.023980055762438893,
+          "abs_contribution": 0.023980055762438893
+        },
+        {
+          "feature": "n_interface_residues_binder",
+          "coefficient": -0.01124202054415485,
+          "abs_contribution": 0.01124202054415485
+        },
+        {
+          "feature": "shape_complementarity_proxy",
+          "coefficient": 0.0009522422642247052,
+          "abs_contribution": 0.0009522422642247052
+        }
+      ]
+    },
+    "rung3": {
+      "features": [
+        "iptm",
+        "ptm",
+        "interface_pae",
+        "min_interface_pae",
+        "mean_plddt",
+        "interface_plddt_missing",
+        "n_interface_residues_binder",
+        "n_interface_residues_target",
+        "buried_sasa_proxy_a2",
+        "atom_contacts_5a",
+        "shape_complementarity_proxy",
+        "atom_clash_fraction_2a",
+        "cdr_contact_fraction",
+        "cdr1_contact_fraction",
+        "cdr2_contact_fraction",
+        "cdr3_contact_fraction"
+      ],
+      "auroc": 0.6909070073341836,
+      "auroc_ci": [
+        0.6604565180564413,
+        0.7220125159438775
+      ],
+      "gate": {
+        "metrics": {
+          "threshold": 0.331121375037623,
+          "tp": 135.0,
+          "fp": 18.0,
+          "fn": 313.0,
+          "tn": 2222.0,
+          "precision": 0.8823529411764706,
+          "recall": 0.3013392857142857,
+          "specificity": 0.9919642857142857,
+          "fpr": 0.008035714285714285
+        },
+        "ppv_sweep": [
+          {
+            "prevalence": 0.5,
+            "ppv": 0.9740259740259741
+          },
+          {
+            "prevalence": 0.1,
+            "ppv": 0.8064516129032264
+          },
+          {
+            "prevalence": 0.01,
+            "ppv": 0.2747252747252754
+          },
+          {
+            "prevalence": 0.001,
+            "ppv": 0.03617945007235902
+          },
+          {
+            "prevalence": 0.0001,
+            "ppv": 0.003736362277686458
+          }
+        ]
+      },
+      "coefficients": [
+        {
+          "feature": "interface_pae",
+          "coefficient": -0.6968801613297231,
+          "abs_contribution": 0.6968801613297231
+        },
+        {
+          "feature": "iptm",
+          "coefficient": 0.686017425403275,
+          "abs_contribution": 0.686017425403275
+        },
+        {
+          "feature": "min_interface_pae",
+          "coefficient": 0.6582383429590799,
+          "abs_contribution": 0.6582383429590799
+        },
+        {
+          "feature": "atom_clash_fraction_2a",
+          "coefficient": -0.26084626538575073,
+          "abs_contribution": 0.26084626538575073
+        },
+        {
+          "feature": "atom_contacts_5a",
+          "coefficient": 0.2258545054365382,
+          "abs_contribution": 0.2258545054365382
+        },
+        {
+          "feature": "interface_plddt_missing",
+          "coefficient": -0.1642943752973324,
+          "abs_contribution": 0.1642943752973324
+        },
+        {
+          "feature": "n_interface_residues_target",
+          "coefficient": -0.12820013889322499,
+          "abs_contribution": 0.12820013889322499
+        },
+        {
+          "feature": "ptm",
+          "coefficient": -0.08766934779206989,
+          "abs_contribution": 0.08766934779206989
+        },
+        {
+          "feature": "mean_plddt",
+          "coefficient": -0.0539092109958973,
+          "abs_contribution": 0.0539092109958973
+        },
+        {
+          "feature": "cdr2_contact_fraction",
+          "coefficient": -0.04227816027590546,
+          "abs_contribution": 0.04227816027590546
+        },
+        {
+          "feature": "n_interface_residues_binder",
+          "coefficient": 0.03413472300467117,
+          "abs_contribution": 0.03413472300467117
+        },
+        {
+          "feature": "cdr1_contact_fraction",
+          "coefficient": 0.033170228704990486,
+          "abs_contribution": 0.033170228704990486
+        },
+        {
+          "feature": "cdr3_contact_fraction",
+          "coefficient": 0.02855362897084682,
+          "abs_contribution": 0.02855362897084682
+        },
+        {
+          "feature": "buried_sasa_proxy_a2",
+          "coefficient": 0.019923310657707655,
+          "abs_contribution": 0.019923310657707655
+        },
+        {
+          "feature": "cdr_contact_fraction",
+          "coefficient": 0.019770339226091043,
+          "abs_contribution": 0.019770339226091043
+        },
+        {
+          "feature": "shape_complementarity_proxy",
+          "coefficient": -0.004266714579668378,
+          "abs_contribution": 0.004266714579668378
+        }
+      ]
+    }
+  },
+  "paired_deltas": {
+    "r2_minus_r0": {
+      "delta_auroc": 0.0014100366709183243,
+      "delta_auroc_ci": [
+        -0.019252580915178535,
+        0.022003273477359687
+      ],
+      "delta_precision": -0.12337662337662336,
+      "delta_precision_ci": [
+        -0.17426047838490236,
+        -0.07452265930526804
+      ]
+    },
+    "r3_minus_r0": {
+      "delta_auroc": 0.0008988360969387488,
+      "delta_auroc_ci": [
+        -0.01907291334502552,
+        0.02182131397480872
+      ],
+      "delta_precision": -0.11764705882352944,
+      "delta_precision_ci": [
+        -0.16891891891891897,
+        -0.07041356418767383
+      ]
+    },
+    "r3_minus_r2": {
+      "delta_auroc": -0.0005112005739795755,
+      "delta_auroc_ci": [
+        -0.003603714923469434,
+        0.0024805434869260554
+      ],
+      "delta_precision": 0.0,
+      "delta_precision_ci": [
+        -0.0037983181437393153,
+        0.003920783737152035
+      ]
+    }
+  },
+  "random_split": {
+    "rung0": {
+      "auroc": 0.6832639110331633
+    },
+    "rung1": {
+      "auroc": 0.6903788663903061
+    },
+    "rung2": {
+      "auroc": 0.6975984534438775
+    },
+    "rung3": {
+      "auroc": 0.6930933115433674
+    }
+  },
+  "cdr_mapping_failure_rate": 0.004464285714285698,
+  "frozen_rung": "rung3",
+  "frozen_model": {
+    "feature_names": [
+      "iptm",
+      "ptm",
+      "interface_pae",
+      "min_interface_pae",
+      "mean_plddt",
+      "interface_plddt_missing",
+      "n_interface_residues_binder",
+      "n_interface_residues_target",
+      "buried_sasa_proxy_a2",
+      "atom_contacts_5a",
+      "shape_complementarity_proxy",
+      "atom_clash_fraction_2a",
+      "cdr_contact_fraction",
+      "cdr1_contact_fraction",
+      "cdr2_contact_fraction",
+      "cdr3_contact_fraction"
+    ],
+    "mean": [
+      0.3818714450379567,
+      0.7216953180752517,
+      21.40398743330291,
+      9.124672619559403,
+      86.07807966499101,
+      0.7399553571428571,
+      38.66034226190476,
+      47.533854166666664,
+      159.70000973010505,
+      469.85565476190476,
+      1.070945308576698,
+      6.711075128510114e-07,
+      0.6561099333910229,
+      0.14449037378517782,
+      0.16160640253523947,
+      0.35001315707060704
+    ],
+    "std": [
+      0.21193992742194692,
+      0.10075155184284232,
+      5.813159654396531,
+      4.96582512119906,
+      4.541282344552176,
+      0.438658667506357,
+      8.468228711005882,
+      14.816648746794085,
+      60.339040985816396,
+      154.3541170496161,
+      0.1370679958043526,
+      1.2513978697498058e-06,
+      0.16173969831300788,
+      0.07147691429245177,
+      0.06770916512301682,
+      0.1292081663857837
+    ],
+    "intercept": -1.859389747153904,
+    "coef": [
+      0.686017425403275,
+      -0.08766934779206989,
+      -0.6968801613297231,
+      0.6582383429590799,
+      -0.0539092109958973,
+      -0.1642943752973324,
+      0.03413472300467117,
+      -0.12820013889322499,
+      0.019923310657707655,
+      0.2258545054365382,
+      -0.004266714579668378,
+      -0.26084626538575073,
+      0.019770339226091043,
+      0.033170228704990486,
+      -0.04227816027590546,
+      0.02855362897084682
+    ],
+    "threshold": 0.331121375037623,
+    "target_precision": 0.9
+  }
+}

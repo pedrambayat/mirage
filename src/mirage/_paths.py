@@ -26,3 +26,13 @@ def default_af2m_predictions_root() -> Path:
     against ``pose_predictors.af2m``'s use of ``scorers.base``.
     """
     return repo_root() / "data" / "raw" / "predictions" / "af2m"
+
+
+def default_protenix_predictions_root() -> Path:
+    """Where Protenix writes per-example outputs by default.
+
+    Mirrors ``default_af2m_predictions_root``: the single source of truth for
+    the Protenix prediction layout so both the scorer and any staging scripts
+    agree on the path without re-hardcoding it.
+    """
+    return repo_root() / "data" / "raw" / "predictions" / "protenix"
