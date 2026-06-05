@@ -47,3 +47,19 @@ def test_champloo_antigen_overlap_flags_shared_antigens(tmp_path: Path) -> None:
     overlapping = mod.champloo_antigen_overlap(cha, sab, max_identity=0.9)
     assert "c1" in overlapping  # same antigen as a SAbDab pair -> leakage
     assert "c2" not in overlapping
+
+
+def test_champloo_antigen_overlap_max_identity_one_flags_exact_match(tmp_path: Path) -> None:
+    # At max_identity=1.0, an exactly-identical antigen must still be flagged
+    # (guards against a threshold-inversion bug in identity_to_jaccard_threshold).
+    seq = "M" + "A" * 60
+    other = "M" + "W" * 60
+    sab = tmp_path / "sab.csv"
+    cha = tmp_path / "cha.csv"
+    _pairs(sab, {"s1": seq})
+    _pairs(cha, {"c1": seq, "c2": other})
+
+    mod = _load("analyze_mc_cross_regime.py")
+    overlapping = mod.champloo_antigen_overlap(cha, sab, max_identity=1.0)
+    assert "c1" in overlapping
+    assert "c2" not in overlapping

@@ -103,6 +103,11 @@ def analyze_cross_regime(
     sab_rows = read_feature_csv(sabdab_features)
     cha_rows_all = read_feature_csv(champloo_features)
 
+    # Drop Champloo rows whose antigen clusters with ANY SAbDab antigen. This single
+    # Champloo-side filter makes the deduped Champloo set share no antigen cluster with
+    # SAbDab, so it is leakage-free in BOTH directions: as 2a's test set (vs a SAbDab-
+    # trained gate) AND as 2b's training set (vs the SAbDab test reservoir). No SAbDab-
+    # side filtering is needed.
     overlap = champloo_antigen_overlap(champloo_pairs, sabdab_pairs, max_identity=max_identity)
     cha_rows = [r for r in cha_rows_all if r["pair_id"] not in overlap]
 
@@ -166,7 +171,7 @@ def main() -> int:
         seed=args.seed,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(result, indent=2))
+    args.output.write_text(json.dumps(result, indent=2, default=str))
     d = result["dedup"]
     print(
         f"Dedup: kept {d['champloo_kept']}/{d['champloo_total']} Champloo rows "
