@@ -94,6 +94,9 @@ def analyze_indist(
         da_pt, da_lo, da_hi = paired_delta_bootstrap(
             oof_by_rung[a], oof_by_rung[b], y, statistic=auroc, n_boot=n_boot, seed=seed
         )
+        # Delta-precision at rung-A's operating threshold for BOTH arms: a common
+        # operating point, so the delta reflects added signal, not a threshold shift.
+        # (Each rung's own-threshold precision is in its per-rung "gate" block.)
         dp_pt, dp_lo, dp_hi = paired_delta_bootstrap(
             oof_by_rung[a],
             oof_by_rung[b],

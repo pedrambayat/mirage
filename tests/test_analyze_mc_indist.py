@@ -110,3 +110,9 @@ def test_analyze_indist_reports_all_rungs_and_paired_deltas(tmp_path: Path) -> N
     # the frozen model is the rung-3 MsModel dict
     assert result["frozen_rung"] == "rung3"
     assert len(result["frozen_model"]["feature_names"]) == 16
+
+    # value sanity on the planted-signal synthetic data: rung 0 (ipTM) beats chance
+    # and its CI is ordered. (Real numbers come from the Task 5 run on SAbDab.)
+    assert result["rungs"]["rung0"]["auroc"] > 0.6
+    lo, hi = result["rungs"]["rung0"]["auroc_ci"]
+    assert lo <= hi
