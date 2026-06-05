@@ -50,3 +50,32 @@ Predictions: `scripts/stage_protenix_pairs.py` (+ `stage_champloo_protenix_pairs
 → `precompute_protenix_msa.py` (per-unique-sequence MSA) → `predict_protenix.slurm` +
 `run_protenix_chunk.py` (batched, per-job fault-tolerant). Features:
 `extract_mc_features.py --predictions-root data/raw/predictions/protenix/all`.
+
+## Phase B2 (modeling) — COMPLETE (2026-06-04)
+
+The rung-ladder discriminator + the apples-to-apples test vs the M-S 0.496 floor are
+done. **Headline: a clean negative.** On the same 2,688 SAbDab rows / 241 antigen
+clusters / same held-out-antigen-cluster folds as M-S:
+
+- Rung 0 (ipTM alone): **OOF AUROC 0.690** [0.658, 0.722] — clears the 0.496 sequence
+  floor *and* the ~0.50 AF2-M-confidence wall. Protenix confidence is genuinely
+  informative.
+- Rungs 1/2/3 (+confidence internals / +geometry / +CDR): all **0.691**. Paired
+  **ΔAUROC(R2−R0) = +0.001 [−0.019, +0.022]** and **ΔAUROC(R3−R0) = +0.001
+  [−0.019, +0.022]** — every CI includes 0. Interface geometry and CDR engagement add
+  **no** discriminative signal on top of ipTM.
+- Top standardized coefficients are all confidence terms (`interface_pae` −0.70, `iptm`
+  +0.69, `min_interface_pae` +0.66); geometry/CDR weights are an order of magnitude
+  smaller. Random-split AUROC ≈ OOF (~0.68–0.70) → genuine signal, not a held-out
+  artifact.
+- **Cross-regime (Protenix on both):** dedup dropped 455/546 Champloo rows (SAbDab
+  antigen clusters cover most Champloo antigens at ≥0.9 id), 91 leakage-free kept
+  (14 pos). 2a SAbDab→Champloo rung3 0.758 (rung0 0.763); 2b Champloo→SAbDab rung3
+  0.678 (rung0 0.691). Same pattern both directions: geometry/CDR add nothing over
+  ipTM; ipTM transfers at ~0.69–0.76.
+
+Full writeup: `results/published/mc_indist_summary.md`. Artifacts: `mc_indist.json`,
+`mc_sabdab_model.json` (frozen Rung-3 gate), `mc_cross_regime.json`. Reproduce:
+`scripts/analyze_mc_indist.py` and `scripts/analyze_mc_cross_regime.py` (see the
+summary's "How to reproduce"). The optional AF3 companion (Champloo AF3 rung 0→2 +
+AF3-vs-Protenix ipTM) remains a non-blocking follow-up.
