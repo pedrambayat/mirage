@@ -17,9 +17,16 @@ Use::
 
 from __future__ import annotations
 
-import numpy as np
+import csv
+from pathlib import Path
+from typing import Annotated
 
+import numpy as np
+import typer
+
+from mirage.benchmark.epcam_killing import EpCAMKillingLoader
 from mirage.features.clustering import cluster_antigens
+from mirage.features.normalize import normalize_antigen, normalize_binder
 
 _FIELDNAMES = ["pair_id", "binder_seq", "antigen_seq", "label", "antigen_cluster", "fold"]
 
@@ -87,3 +94,78 @@ def build_epcam_pairs(
                 }
             )
     return rows
+
+
+def load_epcam_positives(killing_labels: Path) -> list[tuple[str, str, str, str]]:
+    """Load the 14 labeled VHHs as ``(vhh_id, binder, epcam_antigen, killing_label)``.
+
+    Sequences are normalized at the featurization boundary (binder -> ANARCI IMGT
+    variable domain; antigen -> signal-peptide/His-tag strip), exactly as the M-C
+    feature pipeline does. ``Good`` -> ``functional``, ``Bad`` -> ``nonfunctional``.
+    """
+    loader = EpCAMKillingLoader(killing_labels)
+    out: list[tuple[str, str, str, str]] = []
+    for ex in loader.load():
+        binder = normalize_binder(ex.binder_chains[0])
+        antigen = normalize_antigen(ex.target_chains[0])
+        killing = "functional" if ex.label == "BIND" else "nonfunctional"
+        out.append((str(ex.metadata["vhh_id"]), binder, antigen, killing))
+    return out
+
+
+def sabdab_antigen_pool(sabdab_pairs: Path) -> list[str]:
+    """Unique cognate antigen sequences from the SAbDab pairs CSV (label==1 rows)."""
+    with sabdab_pairs.open(newline="") as fh:
+        antigens = [r["antigen_seq"] for r in csv.DictReader(fh) if r["label"] == "1"]
+    return list(dict.fromkeys(antigens))
+
+
+app = typer.Typer(add_completion=False, help="Build the EpCAM canary pairs CSV.")
+
+
+@app.command()
+def main(
+    killing_labels: Annotated[
+        Path, typer.Option("--killing-labels", help="epcam_killing_labels.csv")
+    ],
+    sabdab_pairs: Annotated[
+        Path, typer.Option("--sabdab-pairs", help="SAbDab pairs CSV (antigen pool)")
+    ],
+    output: Annotated[Path, typer.Option("--output", help="Output pairs CSV")],
+    k: Annotated[int, typer.Option(help="Negatives per positive")] = 5,
+    seed: Annotated[int, typer.Option(help="Random seed")] = 20260607,
+    max_identity: Annotated[float, typer.Option("--max-identity", help="Dedup identity")] = 0.9,
+) -> None:
+    """Stage EpCAM positives + dedup'd shuffled negatives; write to --output."""
+    positives = load_epcam_positives(killing_labels)
+    epcam_antigen = positives[0][2]
+
+    # Leakage guard: none of the 14 designed VHHs may appear in SAbDab training.
+    with sabdab_pairs.open(newline="") as fh:
+        sabdab_binders = {r["binder_seq"] for r in csv.DictReader(fh)}
+    overlap = {p[0] for p in positives if p[1] in sabdab_binders}
+    if overlap:
+        raise SystemExit(f"Leakage: EpCAM VHH(s) {sorted(overlap)} present in SAbDab binders")
+
+    pool = epcam_antigen_negative_pool(
+        sabdab_antigen_pool(sabdab_pairs), epcam_antigen, max_identity=max_identity
+    )
+    if len(pool) < k:
+        raise SystemExit(f"Negative pool too small ({len(pool)}) for k={k}")
+
+    rows = build_epcam_pairs(positives, pool, k=k, seed=seed)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    with output.open("w", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=_FIELDNAMES)
+        writer.writeheader()
+        writer.writerows(rows)
+
+    n_pos = sum(1 for r in rows if r["label"] == "1")
+    typer.echo(
+        f"positives={n_pos} negatives={len(rows) - n_pos} total={len(rows)} "
+        f"pool={len(pool)} (dedup max_identity={max_identity})"
+    )
+
+
+if __name__ == "__main__":
+    app()

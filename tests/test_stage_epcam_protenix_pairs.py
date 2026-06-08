@@ -55,3 +55,18 @@ def test_build_epcam_pairs_is_deterministic():
     a = mod.build_epcam_pairs(positives, pool, k=5, seed=7)
     b = mod.build_epcam_pairs(positives, pool, k=5, seed=7)
     assert [r["antigen_seq"] for r in a] == [r["antigen_seq"] for r in b]
+
+
+def test_load_epcam_positives_maps_label_and_normalizes(tmp_path):
+    mod = _load()
+    csv_path = tmp_path / "killing.csv"
+    csv_path.write_text(
+        "vhh_id,vhh_sequence,label\n"
+        "10,QVQLVESGGGLVQPGGSLRLSCAAS,Good\n"
+        "14,EVQLVESGGGLVQPGGSLRLSCAAS,Bad\n"
+    )
+    pos = mod.load_epcam_positives(csv_path)
+    assert [p[0] for p in pos] == ["10", "14"]
+    assert [p[3] for p in pos] == ["functional", "nonfunctional"]
+    # antigen is the EpCAM ECD constant (normalized), identical across positives
+    assert pos[0][2] == pos[1][2] and len(pos[0][2]) > 0
