@@ -23,3 +23,35 @@ def test_negative_pool_excludes_epcam_cluster_antigens():
     pool = mod.epcam_antigen_negative_pool([near_epcam, far1, far2], epcam, max_identity=0.9)
     assert near_epcam not in pool
     assert far1 in pool and far2 in pool
+
+
+def test_build_epcam_pairs_shape_and_ids():
+    mod = _load()
+    positives = [
+        ("10", "QVQLVESGGG", "EPCAMSEQ", "functional"),
+        ("14", "EVQLVESGGA", "EPCAMSEQ", "nonfunctional"),
+    ]
+    pool = [f"WRONGANTIGEN{i}" for i in range(20)]
+    rows = mod.build_epcam_pairs(positives, pool, k=5, seed=7)
+    # 2 positives + 2*5 negatives
+    assert len(rows) == 12
+    pos = [r for r in rows if r["label"] == "1"]
+    neg = [r for r in rows if r["label"] == "0"]
+    assert len(pos) == 2 and len(neg) == 10
+    # positive pair_id convention + antigen is EpCAM
+    assert {r["pair_id"] for r in pos} == {"epcam-10__epcam", "epcam-14__epcam"}
+    assert all(r["antigen_seq"] == "EPCAMSEQ" for r in pos)
+    # negative pair_id convention + antigen drawn from the pool (never EpCAM)
+    assert all(r["pair_id"].endswith(tuple(f"__neg{j}" for j in range(5))) for r in neg)
+    assert all(r["antigen_seq"] in pool for r in neg)
+    # schema columns present and exact
+    assert all(set(r) == set(mod._FIELDNAMES) for r in rows)
+
+
+def test_build_epcam_pairs_is_deterministic():
+    mod = _load()
+    positives = [("10", "QVQLVESGGG", "EPCAMSEQ", "functional")]
+    pool = [f"A{i}" for i in range(50)]
+    a = mod.build_epcam_pairs(positives, pool, k=5, seed=7)
+    b = mod.build_epcam_pairs(positives, pool, k=5, seed=7)
+    assert [r["antigen_seq"] for r in a] == [r["antigen_seq"] for r in b]
