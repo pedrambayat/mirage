@@ -23,7 +23,9 @@ Use::
 
 from __future__ import annotations
 
+import argparse
 import csv
+import json
 from pathlib import Path
 from typing import Any
 
@@ -126,3 +128,40 @@ def analyze_epcam(
     }
 
     return {"primary": primary, "calibration": calibration, "secondary_killing": secondary}
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--sabdab-features", type=Path, required=True)
+    parser.add_argument("--epcam-features", type=Path, required=True)
+    parser.add_argument("--killing-labels", type=Path, required=True)
+    parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--l2", type=float, default=1.0)
+    parser.add_argument("--target-precision", type=float, default=0.9)
+    parser.add_argument("--n-boot", type=int, default=1000)
+    parser.add_argument("--seed", type=int, default=20260607)
+    args = parser.parse_args()
+
+    result = analyze_epcam(
+        args.sabdab_features,
+        args.epcam_features,
+        args.killing_labels,
+        l2=args.l2,
+        target_precision=args.target_precision,
+        n_boot=args.n_boot,
+        seed=args.seed,
+    )
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_text(json.dumps(result, indent=2, default=str))
+    p = result["primary"]
+    print(f"EpCAM n={p['n']} ({p['n_positive']} pos / {p['n_negative']} neg)")
+    print(f"  rung0 (ipTM) AUROC: {round(p['rung0_auroc'], 3)}")
+    print(f"  rung3 (full)  AUROC: {round(p['rung3_auroc'], 3)}")
+    d = p["delta_auroc_r3_minus_r0"]
+    print(f"  Delta(R3-R0): {round(d['point'], 3)} CI {[round(c, 3) for c in d['ci']]}")
+    print(f"Wrote {args.output}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
