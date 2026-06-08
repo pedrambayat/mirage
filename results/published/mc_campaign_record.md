@@ -79,3 +79,25 @@ Full writeup: `results/published/mc_indist_summary.md`. Artifacts: `mc_indist.js
 `scripts/analyze_mc_indist.py` and `scripts/analyze_mc_cross_regime.py` (see the
 summary's "How to reproduce"). The optional AF3 companion (Champloo AF3 rung 0→2 +
 AF3-vs-Protenix ipTM) remains a non-blocking follow-up.
+
+## EpCAM real-negative canary — COMPLETE (2026-06-08)
+
+First test in the real-negative tier: 14 real designed EpCAM VHHs (CAR-T killing labels)
++ 70 shuffled negatives, Protenix-predicted (84/84, 0 failures), scored by the **frozen
+SAbDab M-C gate** applied unchanged. Same predictor config as B1. Validation gate passed
+(positive median ipTM 0.620 vs shuffled 0.327).
+
+- **Primary (designed-binders-vs-shuffled, frozen transfer):** rung-0 (ipTM) AUROC
+  **0.761**, rung-3 **0.777**, paired **ΔAUROC(R3−R0) = +0.015 [−0.035, +0.072]** (CI
+  includes 0). ipTM generalizes to the designed-binder regime (above the 0.690
+  in-distribution level); geometry/CDR add nothing — the B2 negative reproduces.
+- **Calibration (headline):** the frozen SAbDab rung-3 gate at its P=0.90 threshold
+  (0.331), applied unchanged, holds **precision 0.833** (5 TP / 1 FP), recall 0.357,
+  specificity 0.986 — vs the M-S sequence gate's recall-0 collapse on AVIDa. Cross-regime
+  precision stability holds for the structure gate.
+- **Secondary (exploratory, N=14, killing≠binding):** mirage score vs functional killing
+  descriptive AUROC **0.771** — encouraging hint, to test at power on AVIDa.
+
+Full writeup: `results/published/mc_epcam_canary_summary.md`. Artifact:
+`mc_epcam_canary.json`. Spec/plan: `docs/superpowers/{specs,plans}/2026-06-07-mirage-mc-epcam-canary*`.
+Next: the powered real-negative test (AVIDa-hIL6, real assay negatives).
