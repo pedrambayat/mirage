@@ -43,11 +43,7 @@ def epcam_antigen_negative_pool(
     pooled = [epcam_antigen, *sabdab_antigens]
     clusters = cluster_antigens([a.replace(":", "") for a in pooled], max_identity=max_identity)
     epcam_cluster = clusters[0]
-    return [
-        ag
-        for ag, c in zip(sabdab_antigens, clusters[1:], strict=True)
-        if c != epcam_cluster
-    ]
+    return [ag for ag, c in zip(sabdab_antigens, clusters[1:], strict=True) if c != epcam_cluster]
 
 
 def build_epcam_pairs(

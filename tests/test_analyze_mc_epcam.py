@@ -32,21 +32,34 @@ def _feature_row(pair_id, label, iptm, fold="0"):
     # Minimal row matching extract_mc_features FEATURE_COLUMNS. Geometry/CDR are
     # constant so only ipTM carries signal; interface_plddt blank -> missing flag.
     return {
-        "pair_id": pair_id, "label": label, "antigen_cluster": "0", "fold": fold,
+        "pair_id": pair_id,
+        "label": label,
+        "antigen_cluster": "0",
+        "fold": fold,
         "prediction_present": "1",
-        "iptm": str(iptm), "ptm": "0.5", "interface_pae": "15.0",
-        "min_interface_pae": "8.0", "interface_plddt": "", "mean_plddt": "70.0",
-        "n_interface_residues_binder": "10", "n_interface_residues_target": "12",
-        "buried_sasa_proxy_a2": "500.0", "atom_contacts_5a": "40.0",
-        "shape_complementarity_proxy": "0.5", "atom_clash_fraction_2a": "0.01",
-        "cdr_contact_fraction": "0.6", "cdr1_contact_fraction": "0.2",
-        "cdr2_contact_fraction": "0.2", "cdr3_contact_fraction": "0.2",
+        "iptm": str(iptm),
+        "ptm": "0.5",
+        "interface_pae": "15.0",
+        "min_interface_pae": "8.0",
+        "interface_plddt": "",
+        "mean_plddt": "70.0",
+        "n_interface_residues_binder": "10",
+        "n_interface_residues_target": "12",
+        "buried_sasa_proxy_a2": "500.0",
+        "atom_contacts_5a": "40.0",
+        "shape_complementarity_proxy": "0.5",
+        "atom_clash_fraction_2a": "0.01",
+        "cdr_contact_fraction": "0.6",
+        "cdr1_contact_fraction": "0.2",
+        "cdr2_contact_fraction": "0.2",
+        "cdr3_contact_fraction": "0.2",
         "cdr_mapping_ok": "1",
     }
 
 
 def _write_features(path, rows):
     import csv as _csv
+
     cols = list(rows[0].keys())
     with path.open("w", newline="") as fh:
         w = _csv.DictWriter(fh, fieldnames=cols)
