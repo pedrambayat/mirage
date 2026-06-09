@@ -65,11 +65,75 @@ nothing — consistent with AUROC ≈ chance.)
   (M-C, Phase B).
 
 > **Note on "strongest":** within sequence-only, stage 2 (cross-attention over
-> per-residue embeddings, PLM fine-tuning) could in principle extract more, and is
-> the deferred next rung. But the additive→diagonal→low-rank ladder already shows
-> that adding interaction capacity buys *nothing* on held-out antigens here, so the
-> burden of proof is on a much richer model to beat chance — a strong prior that the
-> floor is real, not a capacity artifact.
+> per-residue embeddings) could in principle extract more — the additive→diagonal→
+> low-rank ladder used only *mean-pooled* embeddings, which discard CDR-epitope
+> contact structure. That stage-2 shot was taken (see below) and **also lands at
+> the floor**, confirming the floor is real, not a pooling/capacity artifact. (PLM
+> fine-tuning is out of scope — it would overfit 448 positives.)
+
+## Leakage contrast: random vs held-out-antigen split
+
+To check whether the chance result is an *artifact of holding out antigens* (a
+true generalization gap) or a genuine *absence of signal*, the same ladder was
+re-run under a **random split** (`--random-folds`): folds assigned randomly **per
+positive** (each binder + its negatives stay together), so whole binders are held
+out in *both* splits and the **only** difference is that test antigens are now
+exposed during training (as other binders' cognates and as negative partners). If
+the 0.50 were a held-out-antigen artifact, the random split — which lets the model
+memorize antigen-conditional patterns — should score well above chance.
+
+| rung | held-out-antigen AUROC | random-split AUROC |
+|---|---|---|
+| 0 Tier-S (additive) | 0.520 | 0.482 |
+| 1 ESM-concat (additive) | 0.491 | 0.202 |
+| 2 Hadamard (diagonal bilinear) | 0.495 | 0.392 |
+| 3 low-rank bilinear | 0.496 | 0.536 |
+
+**The random split shows no memorization advantage.** The intended strongest model
+(rung 3) is ≈ chance in both regimes (0.496 vs 0.536). The high-dimensional
+additive/diagonal rungs go *sub-chance* under random folds (0.20–0.39) — an
+overfitting / anti-generalization signature (with ~2,150 train rows they fit
+fold-specific noise, not signal). No rung approaches the high AUROC that genuine
+antigen memorization would produce.
+
+**Read:** the floor is more robust than a "generalization failure" — there is **no
+usable sequence-only binding signal here at all**, not even one a leaky split could
+exploit. The leakage-controlled 0.50 is therefore not a cost of the held-out-antigen
+design; it is the honest absence of signal. (Reproduced from
+`results/published/sabdab_baseline_random.json`.)
+
+## Stage 2 — per-residue cross-attention
+
+The stage-1 ladder used only **mean-pooled** embeddings, which discard the
+CDR-epitope **contact** structure a binding model arguably needs. Stage 2 tests
+whether a model over **per-residue** ESM-2 650M embeddings recovers it, under the
+*same* held-out-antigen-cluster OOF split. Two rungs (frozen embeddings; torch in
+the `esm` env, metrics in numpy via `eval/gate.py`):
+
+- **Cross-attention** — binder residues cross-attend to antigen residues
+  (length-masked), attended rep pooled → MLP → logit. The model that *can* use
+  contacts.
+- **Pooled-MLP ablation** — `[B | A | B⊙A]` → MLP → logit. Isolates "attention
+  captured contacts" from "just a deeper nonlinear head with an interaction term."
+
+| model | AUROC | 95% CI |
+|---|---|---|
+| bilinear floor (stage 1) | 0.496 | — |
+| **cross-attention** (per-residue) | **0.496** | [0.468, 0.525] |
+| pooled-MLP ablation | 0.526 | [0.497, 0.556] |
+
+**Read — the floor holds.** The cross-attention head, which had access to
+per-residue contact structure, lands **exactly at the floor (0.496)** with a CI
+straddling chance: per-residue attention recovers nothing transferable. The only
+movement is a marginal +0.03 from the pooled-MLP (a deeper nonlinear head), and
+critically the **attention model did no better than — and slightly below — the
+simpler pooled-MLP**, so the gain is from head nonlinearity, not contact modeling.
+A torch smoke test confirms both models overfit a planted signal (train AUROC
+1.00), so this is a genuine no-signal result, not a dead model. Stage 2 does **not
+rescue** sequence-only; the floor is confirmed and the next step is the
+predictor-conditional structure track (M-C). (Reproduced from
+`results/published/sabdab_stage2.json`; see
+`docs/superpowers/plans/2026-06-02-sabdab-stage2-cross-attention.md`.)
 
 ## Orthogonal validation — AVIDa-hIL6 (held-out same-antigen, NOT training)
 
@@ -91,13 +155,17 @@ sequences from the cached ESM-2 embeddings.
 
 Two distinct readings, and the distinction is the point:
 
-- **Ranking carries weak same-antigen signal (AUROC 0.617 > 0.5).** Unlike the
-  in-distribution *held-out-antigen* result (AUROC ≈ 0.50), the frozen gate ranks
-  AVIDa pairs modestly above chance. AVIDa is a **single-antigen** task (every VHH
-  vs IL-6), so this is almost certainly **binder-side** signal — properties that
-  correlate with being a real IL-6 binder — **not** antigen-specific
-  complementarity (which is exactly what collapses to chance for *unseen*
-  antigens). It is a different axis, and a weak one.
+- **Ranking carries weak same-antigen signal (AUROC 0.617 > 0.5), and it is
+  provably binder-side.** Unlike the in-distribution *held-out-antigen* result
+  (AUROC ≈ 0.50), the frozen gate ranks AVIDa pairs modestly above chance. AVIDa is
+  a **single-antigen** task (every VHH vs IL-6 ± single-point mutants): the 31
+  antigen embeddings have **mean pairwise cosine 0.9999** (min 0.9995) — essentially
+  one constant vector — whereas binder embeddings span down to cosine 0.78. With a
+  constant antigen input, the bilinear score `e_binderᵀ W e_antigen` reduces to a
+  fixed *linear function of the binder embedding*, so the 0.617 is **necessarily
+  binder-side** — properties that correlate with being a real IL-6 binder — **not**
+  antigen-specific complementarity (which is exactly what collapses to chance for
+  *unseen* antigens). It is a different axis, and a weak one.
 - **The calibrated operating point does NOT transfer.** At the SAbDab-frozen
   threshold the gate predicts ~76% positive with precision 0.041 ≈ prevalence —
   the threshold sits in the wrong place on AVIDa's score distribution. So the

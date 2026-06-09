@@ -39,6 +39,21 @@ def read_csv(path: Path) -> list[dict[str, str]]:
         return list(csv.DictReader(fh))
 
 
+def random_folds_by_positive(
+    pair_ids: list[str], *, n_splits: int, seed: int
+) -> np.ndarray[Any, Any]:
+    """Leakage contrast to the antigen-cluster split: assign each row a fold by
+    its parent POSITIVE (a negative ``{pid}__neg{j}`` inherits ``{pid}``'s fold),
+    drawn uniformly at random. Each unique binder is one positive (+ its
+    negatives), so this holds out whole binders in BOTH splits; the only thing
+    that changes vs the antigen-cluster split is that test antigens are exposed
+    during training. Deterministic in ``seed``."""
+    rng = np.random.default_rng(seed)
+    parents = [pid.split("__neg")[0] for pid in pair_ids]
+    fold_of = {p: int(rng.integers(n_splits)) for p in sorted(set(parents))}
+    return np.array([fold_of[p] for p in parents], dtype=int)
+
+
 def run_linear_rung(
     x: np.ndarray[Any, Any],
     y: np.ndarray[Any, Any],
@@ -137,11 +152,19 @@ def main() -> int:
     parser.add_argument("--bilinear-l2", type=float, default=1e-2)
     parser.add_argument("--target-precision", type=float, default=0.9)
     parser.add_argument("--seed", type=int, default=20260601)
+    parser.add_argument(
+        "--random-folds",
+        action="store_true",
+        help="Leakage contrast: reassign folds randomly per positive (negatives "
+        "inherit), ignoring antigen clusters. Holds out binders, exposes antigens.",
+    )
     args = parser.parse_args()
 
     rows = read_csv(args.pairs)
     y = np.array([int(r["label"]) for r in rows], dtype=int)
     folds = np.array([int(r["fold"]) for r in rows], dtype=int)
+    if args.random_folds:
+        folds = random_folds_by_positive([r["pair_id"] for r in rows], n_splits=5, seed=args.seed)
     binders = [r["binder_seq"] for r in rows]
     antigens = [r["antigen_seq"] for r in rows]
     pairs = list(zip(binders, antigens, strict=True))
